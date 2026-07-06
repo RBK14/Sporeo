@@ -1,0 +1,16 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>a53a389f-d4ca-4c2d-8761-2cc0e9aee6f2</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sporeo.Fixtures.API\Sporeo.Fixtures.API.csproj" />
+    <ProjectReference Include="..\Sporeo.Fixtures.Worker\Sporeo.Fixtures.Worker.csproj" />
+  </ItemGroup>
+
+</Project>

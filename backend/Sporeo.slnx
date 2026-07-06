@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Sporeo.AppHost/Sporeo.AppHost.csproj" />
+    <Project Path="src/Sporeo.ServiceDefaults/Sporeo.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/Sporeo.BuildingBlocks.Domain/Sporeo.BuildingBlocks.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Fixtures/">
+    <Project Path="src/Sporeo.Fixtures.API/Sporeo.Fixtures.API.csproj" />
+    <Project Path="src/Sporeo.Fixtures.Application/Sporeo.Fixtures.Application.csproj" />
+    <Project Path="src/Sporeo.Fixtures.Domain/Sporeo.Fixtures.Domain.csproj" />
+    <Project Path="src/Sporeo.Fixtures.Infrastructure/Sporeo.Fixtures.Infrastructure.csproj" />
+    <Project Path="src/Sporeo.Fixtures.Worker/Sporeo.Fixtures.Worker.csproj" />
+  </Folder>
+</Solution>

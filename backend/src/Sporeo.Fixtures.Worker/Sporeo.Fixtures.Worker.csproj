@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Sporeo.Fixtures.Worker-e9b8917a-ee6f-4b31-8eb3-17e699b280ac</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
+    <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure\Sporeo.Fixtures.Infrastructure.csproj" />
+    <ProjectReference Include="..\Sporeo.ServiceDefaults\Sporeo.ServiceDefaults.csproj" />
+  </ItemGroup>
+</Project>
