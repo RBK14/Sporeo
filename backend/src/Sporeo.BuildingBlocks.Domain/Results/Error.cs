@@ -6,3 +6,6 @@ public record Error(string Code, string Message)
 
     public static readonly Error NullValue = new("Error.NullValue", "A given value cannot be null or empty.");
 }
+
+public record ValidationError(Error[] Errors)
+    : Error("Error.ValidationFailure", "Wystąpiły błędy walidacji jednego lub więcej pól.");
