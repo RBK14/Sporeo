@@ -7,6 +7,14 @@ using Sporeo.BuildingBlocks.Domain.Results;
 
 namespace Sporeo.BuildingBlocks.Application.Behaviors;
 
+/// <summary>
+/// MediatR pipeline behavior that commits pending unit-of-work changes after a successful command.
+/// Skips persistence when the handler returns a failed <see cref="Result"/>.
+/// </summary>
+/// <typeparam name="TRequest">The type of the command being handled.</typeparam>
+/// <typeparam name="TResponse">The type of the response returned by the handler.</typeparam>
+/// <param name="unitOfWork">The unit of work used to persist changes.</param>
+/// <param name="logger">The logger used to record unit-of-work lifecycle events.</param>
 public class TransactionBehavior<TRequest, TResponse>(
     IUnitOfWork unitOfWork,
     ILogger<TransactionBehavior<TRequest, TResponse>> logger)
@@ -16,21 +24,22 @@ public class TransactionBehavior<TRequest, TResponse>(
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly ILogger<TransactionBehavior<TRequest, TResponse>> _logger = logger;
 
+    /// <inheritdoc />
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var commandName = typeof(TRequest).Name;
-        _logger.LogBeginTransaction(commandName);
-        
+        _logger.LogBeginUnitOfWork(commandName);
+
         var response = await next();
 
         if (response is Result { IsFailure: true })
         {
-            _logger.LogRollbackTransaction(commandName);
+            _logger.LogSkippedUnitOfWorkCommit(commandName);
             return response;
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        _logger.LogCommitTransaction(commandName);
+        _logger.LogCommitUnitOfWork(commandName);
 
         return response;
     }

@@ -1,30 +1,34 @@
-﻿using Sporeo.BuildingBlocks.Domain.Events;
+﻿namespace Sporeo.BuildingBlocks.Domain.Models;
 
-namespace Sporeo.BuildingBlocks.Domain.Models;
-
-public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents
+/// <summary>
+/// Base class for domain entities identified by a strongly typed identifier.
+/// Provides identity-based equality.
+/// </summary>
+/// <typeparam name="TId">The type of the entity identifier.</typeparam>
+public abstract class Entity<TId> : IEquatable<Entity<TId>>
     where TId : notnull
 {
-    private readonly List<IDomainEvent> _domainEvents = new();
-
+    /// <summary>
+    /// Gets the unique identifier of the entity.
+    /// </summary>
     public TId Id { get; protected set; }
-    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Entity{TId}"/> class with the specified identifier.
+    /// </summary>
+    /// <param name="id">The unique identifier of the entity.</param>
     protected Entity(TId id)
     {
         Id = id;
     }
 
-    protected void AddDomainEvent(IDomainEvent domainEvent)
-    {
-        _domainEvents.Add(domainEvent);
-    }
+    /// <summary>
+    /// Determines whether the entity has not yet been assigned a persistent identifier.
+    /// </summary>
+    /// <returns><see langword="true"/> when the identifier is the default value; otherwise, <see langword="false"/>.</returns>
+    protected bool IsTransient() => EqualityComparer<TId>.Default.Equals(Id, default!);
 
-    public void ClearDomainEvents()
-    {
-        _domainEvents.Clear();
-    }
-
+    /// <inheritdoc />
     public override bool Equals(object? obj)
     {
         if (obj is null) return false;
@@ -32,18 +36,31 @@ public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents
         if (obj.GetType() != GetType()) return false;
         if (obj is not Entity<TId> other) return false;
 
+        if (IsTransient() || other.IsTransient())
+            return ReferenceEquals(this, other);
+
         return Id.Equals(other.Id);
     }
 
+    /// <inheritdoc />
     public bool Equals(Entity<TId>? other)
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
         if (other.GetType() != GetType()) return false;
 
+        if (IsTransient() || other.IsTransient())
+            return ReferenceEquals(this, other);
+
         return Id.Equals(other.Id);
     }
 
+    /// <summary>
+    /// Determines whether two entities are equal based on their identifiers and runtime type.
+    /// </summary>
+    /// <param name="left">The first entity to compare.</param>
+    /// <param name="right">The second entity to compare.</param>
+    /// <returns><see langword="true"/> if the entities are equal; otherwise, <see langword="false"/>.</returns>
     public static bool operator ==(Entity<TId>? left, Entity<TId>? right)
     {
         if (left is null && right is null) return true;
@@ -52,17 +69,31 @@ public abstract class Entity<TId> : IEquatable<Entity<TId>>, IHasDomainEvents
         return left.Equals(right);
     }
 
+    /// <summary>
+    /// Determines whether two entities are not equal.
+    /// </summary>
+    /// <param name="left">The first entity to compare.</param>
+    /// <param name="right">The second entity to compare.</param>
+    /// <returns><see langword="true"/> if the entities are not equal; otherwise, <see langword="false"/>.</returns>
     public static bool operator !=(Entity<TId>? left, Entity<TId>? right)
     {
         return !(left == right);
     }
 
+    /// <inheritdoc />
     public override int GetHashCode()
     {
-        return Id.GetHashCode();
+        if (IsTransient())
+            return base.GetHashCode();
+
+        return HashCode.Combine(GetType(), Id);
     }
 
 #pragma warning disable CS8618
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Entity{TId}"/> class.
+    /// Intended for use by object-relational mappers.
+    /// </summary>
     protected Entity() { }
 #pragma warning restore CS8618
 }
