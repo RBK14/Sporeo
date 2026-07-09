@@ -19,4 +19,7 @@
     <Project Path="tests/Sporeo.BuildingBlocks.Application.Tests/Sporeo.BuildingBlocks.Application.Tests.csproj" />
     <Project Path="tests/Sporeo.BuildingBlocks.Domain.Tests/Sporeo.BuildingBlocks.Domain.Tests.csproj" />
   </Folder>
+  <Folder Name="/tests/Fixtures/">
+    <Project Path="tests/Sporeo.Fixtures.Domain.Tests/Sporeo.Fixtures.Domain.Tests.csproj" />
+  </Folder>
 </Solution>
