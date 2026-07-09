@@ -1,4 +1,7 @@
-﻿namespace Sporeo.BuildingBlocks.Domain.Models;
+﻿using Sporeo.BuildingBlocks.Domain.Results;
+using Sporeo.BuildingBlocks.Domain.Rules;
+
+namespace Sporeo.BuildingBlocks.Domain.Models;
 
 /// <summary>
 /// Base class for domain entities identified by a strongly typed identifier.
@@ -87,6 +90,33 @@ public abstract class Entity<TId> : IEquatable<Entity<TId>>
             return base.GetHashCode();
 
         return HashCode.Combine(GetType(), Id);
+    }
+
+    /// <summary>
+    /// Evaluates a single business rule and returns a failed result when it is broken.
+    /// </summary>
+    /// <param name="rule">The business rule to evaluate.</param>
+    /// <returns>A successful result when the rule is satisfied; otherwise, a failure with the rule error.</returns>
+    protected static Result CheckRule(IBusinessRule rule) =>
+        rule.IsBroken()
+            ? Result.Failure(rule.Error)
+            : Result.Success();
+
+    /// <summary>
+    /// Evaluates multiple business rules in order and returns the first failure encountered.
+    /// </summary>
+    /// <param name="rules">The business rules to evaluate.</param>
+    /// <returns>A successful result when all rules are satisfied; otherwise, the first failure.</returns>
+    protected static Result CheckRules(params IBusinessRule[] rules)
+    {
+        foreach (var rule in rules)
+        {
+            var result = CheckRule(rule);
+            if (result.IsFailure)
+                return result;
+        }
+
+        return Result.Success();
     }
 
 #pragma warning disable CS8618
