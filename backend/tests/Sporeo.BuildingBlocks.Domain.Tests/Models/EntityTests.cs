@@ -1,5 +1,7 @@
 using FluentAssertions;
 using Sporeo.BuildingBlocks.Domain.Models;
+using Sporeo.BuildingBlocks.Domain.Results;
+using Sporeo.BuildingBlocks.Domain.Rules;
 
 namespace Sporeo.BuildingBlocks.Domain.Tests.Models;
 
@@ -10,6 +12,22 @@ public class EntityTests
         public TestEntity(Guid id) : base(id) { }
 
         public TestEntity() { }
+
+        public static Result Validate(params IBusinessRule[] rules) => CheckRules(rules);
+    }
+
+    private sealed class BrokenRule : IBusinessRule
+    {
+        public bool IsBroken() => true;
+
+        public Error Error { get; } = new("Test.Broken", "Rule is broken.");
+    }
+
+    private sealed class SatisfiedRule : IBusinessRule
+    {
+        public bool IsBroken() => false;
+
+        public Error Error { get; } = new("Test.Satisfied", "Rule is satisfied.");
     }
 
     private sealed class OtherEntity : Entity<Guid>
@@ -63,5 +81,31 @@ public class EntityTests
         var right = new TestEntity();
 
         left.GetHashCode().Should().NotBe(right.GetHashCode());
+    }
+
+    [Fact]
+    public void CheckRules_WithBrokenRule_ShouldReturnFailure()
+    {
+        var result = TestEntity.Validate(new BrokenRule());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Test.Broken");
+    }
+
+    [Fact]
+    public void CheckRules_WithSatisfiedRules_ShouldReturnSuccess()
+    {
+        var result = TestEntity.Validate(new SatisfiedRule(), new SatisfiedRule());
+
+        result.IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CheckRules_ShouldReturnFirstFailure()
+    {
+        var result = TestEntity.Validate(new SatisfiedRule(), new BrokenRule(), new BrokenRule());
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Code.Should().Be("Test.Broken");
     }
 }
