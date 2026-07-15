@@ -1,0 +1,51 @@
+\documentclass[a4paper,onecolumn,twoside,12pt,extrafontsizes]{memoir}
+
+\input{settings}
+\input{metadata}
+
+%\includeonly{chapter01,chapter02}
+
+\begin{document}
+
+\include{titlepage}
+\clearpage
+
+\include{abstract}
+\pagestyle{outer}
+\clearpage
+
+\pdfbookmark[0]{Spis treści}{spisTresci.1}
+\tableofcontents*
+\clearpage
+
+\pdfbookmark[0]{Spis rysunków}{spisRysunkow.1}
+\listoffigures*
+\clearpage
+
+\pdfbookmark[0]{Spis tabel}{spisTabel.1}
+\listoftables*
+\clearpage
+
+\pdfbookmark[0]{Spis listingów}{spisListingow.1}
+\lstlistoflistings*
+\clearpage
+
+\include{abbreviations}
+\chapterstyle{default}
+\include{chapter01}
+\include{chapter02}
+\include{chapter03}
+\include{chapter04}
+\include{chapter05}
+\include{chapter06}
+\include{chapter07}
+
+% Po dodaniu pierwszych źródeł do references.bib i cytowań w tekście
+% odkomentuj poniższe linie:
+%\bibliographystyle{plabbrv} %%--bibtex--%%
+%\setlength{\bibitemsep}{2pt}
+%\addtocontents{toc}{\addvspace{2pt}}
+%\bibliography{references} %%--bibtex--%%
+%%--biblatex--%%\printbibliography[title=Literatura]
+
+\end{document}
