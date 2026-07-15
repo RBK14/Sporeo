@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
-    <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure\Sporeo.Fixtures.Infrastructure.csproj" />
+    <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure.Persistence\Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
     <ProjectReference Include="..\Sporeo.ServiceDefaults\Sporeo.ServiceDefaults.csproj" />
   </ItemGroup>
 

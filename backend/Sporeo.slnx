@@ -11,7 +11,7 @@
     <Project Path="src/Sporeo.Fixtures.API/Sporeo.Fixtures.API.csproj" />
     <Project Path="src/Sporeo.Fixtures.Application/Sporeo.Fixtures.Application.csproj" />
     <Project Path="src/Sporeo.Fixtures.Domain/Sporeo.Fixtures.Domain.csproj" />
-    <Project Path="src/Sporeo.Fixtures.Infrastructure/Sporeo.Fixtures.Infrastructure.csproj" />
+    <Project Path="src/Sporeo.Fixtures.Infrastructure.Persistence/Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
     <Project Path="src/Sporeo.Fixtures.Worker/Sporeo.Fixtures.Worker.csproj" />
   </Folder>
   <Folder Name="/tests/" />
