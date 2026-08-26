@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Sporeo.BuildingBlocks.Infrastructure\Sporeo.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
   </ItemGroup>
 
