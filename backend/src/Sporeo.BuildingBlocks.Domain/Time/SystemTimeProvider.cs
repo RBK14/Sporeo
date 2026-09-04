@@ -1,7 +1,8 @@
 ﻿using System.Runtime.CompilerServices;
 
-// Set InternalsVisibleTo attribute to allow access to internal members from the test project
+// Set InternalsVisibleTo attribute to allow access to internal members from the test projects
 [assembly: InternalsVisibleTo("Sporeo.BuildingBlocks.Domain.Tests")]
+[assembly: InternalsVisibleTo("Sporeo.Fixtures.Infrastructure.Persistence.Tests")]
 
 namespace Sporeo.BuildingBlocks.Domain.Time;
 

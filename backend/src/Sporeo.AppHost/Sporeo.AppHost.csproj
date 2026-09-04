@@ -13,4 +13,8 @@
     <ProjectReference Include="..\Sporeo.Fixtures.Worker\Sporeo.Fixtures.Worker.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="13.5.3" />
+  </ItemGroup>
+
 </Project>

@@ -15,16 +15,16 @@ public sealed class Address : ValueObject
     public string? Street { get; }
 
     /// <summary>
-    /// Gets the city name, if specified.
+    /// Gets the city name.
     /// </summary>
-    public string? City { get; }
+    public string City { get; }
 
     /// <summary>
-    /// Gets the country name, if specified.
+    /// Gets the country name.
     /// </summary>
-    public string? Country { get; }
+    public string Country { get; }
 
-    private Address(string? street, string? city, string? country)
+    private Address(string? street, string city, string country)
     {
         Street = street;
         City = city;
@@ -35,18 +35,18 @@ public sealed class Address : ValueObject
     /// Creates a validated <see cref="Address"/> from the specified components.
     /// </summary>
     /// <param name="street">The street name and number, or <see langword="null"/> when not provided.</param>
-    /// <param name="city">The city name, or <see langword="null"/> when not provided.</param>
-    /// <param name="country">The country name, or <see langword="null"/> when not provided.</param>
+    /// <param name="city">The city name.</param>
+    /// <param name="country">The country name.</param>
     /// <returns>A successful result containing the address, or a failure when a provided component is empty or whitespace.</returns>
-    public static Result<Address> Create(string? street, string? city, string? country)
+    public static Result<Address> Create(string? street, string city, string country)
     {
         if (street is not null && string.IsNullOrWhiteSpace(street))
             return Result.Failure<Address>(Errors.Venue.Address.EmptyStreet);
 
-        if (city is not null && string.IsNullOrWhiteSpace(city))
+        if (string.IsNullOrWhiteSpace(city))
             return Result.Failure<Address>(Errors.Venue.Address.EmptyCity);
 
-        if (country is not null && string.IsNullOrWhiteSpace(country))
+        if (string.IsNullOrWhiteSpace(country))
             return Result.Failure<Address>(Errors.Venue.Address.EmptyCountry);
 
         return new Address(street, city, country);

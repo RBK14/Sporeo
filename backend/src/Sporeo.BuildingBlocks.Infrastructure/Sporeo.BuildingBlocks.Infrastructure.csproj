@@ -8,13 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="MediatR" Version="14.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sporeo.BuildingBlocks.Domain\Sporeo.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\Sporeo.BuildingBlocks.Application\Sporeo.BuildingBlocks.Application.csproj" />
   </ItemGroup>
 
 </Project>
