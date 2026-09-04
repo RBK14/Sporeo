@@ -13,23 +13,51 @@ using System.Linq.Expressions;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence;
 
-public class FixturesDbContext(DbContextOptions<FixturesDbContext> options) : DbContext(options), IUnitOfWork
+/// <summary>
+/// EF Core database context for the Fixtures bounded context.
+/// Implements <see cref="IUnitOfWork"/> and dispatches domain events before persisting changes.
+/// </summary>
+/// <param name="options">The EF Core options for this context.</param>
+/// <param name="publisher">The MediatR publisher used to dispatch domain events.</param>
+public class FixturesDbContext(
+    DbContextOptions<FixturesDbContext> options,
+    IPublisher publisher) : DbContext(options), IUnitOfWork
 {
-    public DbSet<Fixture> Fixtures { get; set; }
-    public DbSet<Venue> Venues { get; set; }
-    public DbSet<League> Leagues { get; set; }
-    public DbSet<Season> Seasons { get; set; }
-    public DbSet<Sport> Sports { get; set; }
+    private readonly IPublisher _publisher = publisher;
 
-    public async Task<bool> SaveEntitiesAsync(IPublisher publisher, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Gets the set of fixtures.
+    /// </summary>
+    public DbSet<Fixture> Fixtures { get; set; } = null!;
+
+    /// <summary>
+    /// Gets the set of venues.
+    /// </summary>
+    public DbSet<Venue> Venues { get; set; } = null!;
+
+    /// <summary>
+    /// Gets the set of leagues.
+    /// </summary>
+    public DbSet<League> Leagues { get; set; } = null!;
+
+    /// <summary>
+    /// Gets the set of seasons.
+    /// </summary>
+    public DbSet<Season> Seasons { get; set; } = null!;
+
+    /// <summary>
+    /// Gets the set of sports.
+    /// </summary>
+    public DbSet<Sport> Sports { get; set; } = null!;
+
+    /// <inheritdoc />
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        await publisher.DispatchDomainEventsAsync(this);
-        await base.SaveChangesAsync(cancellationToken);
-
-        return true;
-
+        await _publisher.DispatchDomainEventsAsync(this);
+        return await base.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(FixturesDbContext).Assembly);
