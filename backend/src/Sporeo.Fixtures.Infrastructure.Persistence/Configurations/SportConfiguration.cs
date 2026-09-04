@@ -5,8 +5,12 @@ using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// EF Core mapping for <see cref="Sport"/>.
+/// </summary>
 internal class SportConfiguration : IEntityTypeConfiguration<Sport>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Sport> builder)
     {
         builder.ToTable("sports");
@@ -27,6 +31,11 @@ internal class SportConfiguration : IEntityTypeConfiguration<Sport>
 
         builder.Property(x => x.ExternalProviderId)
             .HasMaxLength(100);
+
+        builder.HasIndex(x => new { x.ExternalProviderName, x.ExternalProviderId })
+            .IsUnique()
+            .HasFilter("[ExternalProviderName] IS NOT NULL AND [ExternalProviderId] IS NOT NULL AND [IsDeleted] = 0")
+            .HasDatabaseName("IX_sports_ExternalProvider");
 
         builder.Property(x => x.CreatedOn).IsRequired();
         builder.Property(x => x.ModifiedOn);

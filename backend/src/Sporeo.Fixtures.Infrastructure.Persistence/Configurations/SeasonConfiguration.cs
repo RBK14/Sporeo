@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
@@ -7,8 +7,12 @@ using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Configurations;
 
-public class SeasonConfigration : IEntityTypeConfiguration<Season>
+/// <summary>
+/// EF Core mapping for <see cref="Season"/>.
+/// </summary>
+internal class SeasonConfiguration : IEntityTypeConfiguration<Season>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Season> builder)
     {
         builder.ToTable("seasons");
@@ -50,13 +54,18 @@ public class SeasonConfigration : IEntityTypeConfiguration<Season>
         builder.Property(x => x.ExternalProviderId)
             .HasMaxLength(100);
 
+        builder.HasIndex(x => new { x.ExternalProviderName, x.ExternalProviderId })
+            .IsUnique()
+            .HasFilter("[ExternalProviderName] IS NOT NULL AND [ExternalProviderId] IS NOT NULL AND [IsDeleted] = 0")
+            .HasDatabaseName("IX_seasons_ExternalProvider");
+
         builder.Property(x => x.IsManuallyEdited)
             .IsRequired();
 
         builder.HasIndex(x => x.LeagueId)
             .IsUnique()
             .HasFilter("[IsCurrent] = 1 AND [IsDeleted] = 0")
-            .HasDatabaseName("IX_Seasons_LeagueId_UniqueCurrentSeason");
+            .HasDatabaseName("IX_seasons_LeagueId_UniqueCurrentSeason");
 
         builder.Property(x => x.CreatedOn).IsRequired();
         builder.Property(x => x.ModifiedOn);

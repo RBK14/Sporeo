@@ -13,8 +13,12 @@ using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// EF Core mapping for <see cref="Fixture"/>.
+/// </summary>
 internal class FixtureConfiguration : IEntityTypeConfiguration<Fixture>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Fixture> builder)
     {
         builder.ToTable("fixtures");
@@ -87,6 +91,11 @@ internal class FixtureConfiguration : IEntityTypeConfiguration<Fixture>
 
         builder.Property(x => x.ExternalProviderId)
             .HasMaxLength(100);
+
+        builder.HasIndex(x => new { x.ExternalProviderName, x.ExternalProviderId })
+            .IsUnique()
+            .HasFilter("[ExternalProviderName] IS NOT NULL AND [ExternalProviderId] IS NOT NULL AND [IsDeleted] = 0")
+            .HasDatabaseName("IX_fixtures_ExternalProvider");
 
         builder.Property(x => x.IsManuallyEdited)
             .IsRequired();

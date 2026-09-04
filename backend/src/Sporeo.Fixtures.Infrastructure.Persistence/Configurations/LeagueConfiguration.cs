@@ -7,8 +7,12 @@ using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Configurations;
 
+/// <summary>
+/// EF Core mapping for <see cref="League"/>.
+/// </summary>
 internal class LeagueConfiguration : IEntityTypeConfiguration<League>
 {
+    /// <inheritdoc />
     public void Configure(EntityTypeBuilder<League> builder)
     {
         builder.ToTable("leagues");
@@ -43,6 +47,11 @@ internal class LeagueConfiguration : IEntityTypeConfiguration<League>
 
         builder.Property(x => x.ExternalProviderId)
             .HasMaxLength(100);
+
+        builder.HasIndex(x => new { x.ExternalProviderName, x.ExternalProviderId })
+            .IsUnique()
+            .HasFilter("[ExternalProviderName] IS NOT NULL AND [ExternalProviderId] IS NOT NULL AND [IsDeleted] = 0")
+            .HasDatabaseName("IX_leagues_ExternalProvider");
 
         builder.Property(x => x.IsManuallyEdited)
             .IsRequired();
