@@ -22,5 +22,6 @@
   </Folder>
   <Folder Name="/tests/Fixtures/">
     <Project Path="tests/Sporeo.Fixtures.Domain.Tests/Sporeo.Fixtures.Domain.Tests.csproj" />
+    <Project Path="tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests.csproj" />
   </Folder>
 </Solution>
