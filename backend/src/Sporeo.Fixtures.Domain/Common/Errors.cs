@@ -79,6 +79,13 @@ public static class Errors
         public static readonly Error LockedForSync = new("Venue.LockedForSync", "Cannot synchronize a venue that has been manually edited.");
 
         /// <summary>
+        /// Returned when a venue with the specified identifier cannot be found.
+        /// </summary>
+        /// <param name="venueId">The identifier of the venue that could not be found.</param>
+        public static Error NotFound(Guid venueId) =>
+            new("Venue.NotFound", $"Venue with ID '{venueId}' was not found.");
+
+        /// <summary>
         /// Errors related to venue geographic coordinates.
         /// </summary>
         public static class Coordinates
