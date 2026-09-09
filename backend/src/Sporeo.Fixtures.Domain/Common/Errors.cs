@@ -46,6 +46,13 @@ public static class Errors
         /// Returned when a fixture status transition is not allowed.
         /// </summary>
         public static readonly Error InvalidStatusTransition = new("Fixture.InvalidStatusTransition", "The requested status transition is not allowed.");
+
+        /// <summary>
+        /// Returned when a fixture with the specified identifier cannot be found.
+        /// </summary>
+        /// <param name="fixtureId">The identifier of the fixture that could not be found.</param>
+        public static Error NotFound(Guid fixtureId) =>
+            new("Fixture.NotFound", $"Fixture with ID '{fixtureId}' was not found.");
     }
 
     /// <summary>
