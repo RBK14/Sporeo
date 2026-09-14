@@ -112,4 +112,68 @@ public sealed class RepositorySqlServerTests
             (await sportRepository.GetByExternalProviderAsync("provider", "sport-1")).Should().BeNull();
         }
     }
+
+    [Fact]
+    public async Task FixturesAndVenues_ShouldGetByExternalProviderIds()
+    {
+        await using var provider = await SqlServerTestDatabase.CreateInitializedProviderAsync(
+            $"{DatabaseName}_Batch");
+
+        await using var scope = provider.CreateAsyncScope();
+        var fixtureRepository = scope.ServiceProvider.GetRequiredService<IFixtureRepository>();
+        var venueRepository = scope.ServiceProvider.GetRequiredService<IVenueRepository>();
+        var sportRepository = scope.ServiceProvider.GetRequiredService<ISportRepository>();
+        var db = scope.ServiceProvider.GetRequiredService<FixturesDbContext>();
+
+        var sport = Sport.Create("Football", "provider", "sport-batch").Value;
+        var venue1 = Venue.CreateFromProvider("Stadium 1", "provider", "venue-a").Value;
+        var venue2 = Venue.CreateFromProvider("Stadium 2", "provider", "venue-b").Value;
+        var venueOther = Venue.CreateFromProvider("Other Stadium", "other-provider", "venue-a").Value;
+        var fixture1 = Fixture.CreateFromProvider(
+            sport.Id,
+            null,
+            null,
+            "Match 1",
+            new DateTimeOffset(2025, 9, 14, 15, 0, 0, TimeSpan.Zero),
+            "provider",
+            "fixture-a").Value;
+        var fixture2 = Fixture.CreateFromProvider(
+            sport.Id,
+            null,
+            null,
+            "Match 2",
+            new DateTimeOffset(2025, 9, 15, 15, 0, 0, TimeSpan.Zero),
+            "provider",
+            "fixture-b").Value;
+        var fixtureOther = Fixture.CreateFromProvider(
+            sport.Id,
+            null,
+            null,
+            "Other Match",
+            new DateTimeOffset(2025, 9, 16, 15, 0, 0, TimeSpan.Zero),
+            "other-provider",
+            "fixture-a").Value;
+
+        sportRepository.Add(sport);
+        venueRepository.Add(venue1);
+        venueRepository.Add(venue2);
+        venueRepository.Add(venueOther);
+        fixtureRepository.Add(fixture1);
+        fixtureRepository.Add(fixture2);
+        fixtureRepository.Add(fixtureOther);
+        await db.SaveChangesAsync();
+
+        var venues = await venueRepository.GetByExternalProviderIdsAsync(
+            "provider",
+            ["venue-a", "venue-b", "missing-venue"]);
+        venues.Select(venue => venue.ExternalProviderId).Should().BeEquivalentTo("venue-a", "venue-b");
+
+        var fixtures = await fixtureRepository.GetByExternalProviderIdsAsync(
+            "provider",
+            ["fixture-a", "fixture-b", "missing-fixture"]);
+        fixtures.Select(fixture => fixture.ExternalProviderId).Should().BeEquivalentTo("fixture-a", "fixture-b");
+
+        (await venueRepository.GetByExternalProviderIdsAsync("provider", [])).Should().BeEmpty();
+        (await fixtureRepository.GetByExternalProviderIdsAsync("provider", [])).Should().BeEmpty();
+    }
 }

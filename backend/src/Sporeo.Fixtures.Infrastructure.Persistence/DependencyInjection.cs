@@ -4,6 +4,16 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence;
+using Sporeo.Fixtures.Domain.Fixtures;
+using Sporeo.Fixtures.Domain.Leagues;
+using Sporeo.Fixtures.Domain.Seasons;
+using Sporeo.Fixtures.Domain.Sports;
+using Sporeo.Fixtures.Domain.Venues;
+using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
+using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
+using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
+using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
+using Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence;
 
@@ -23,6 +33,7 @@ public static class DependencyInjection
         services.AddSingleton<AuditableEntityInterceptor>();
         services.AddSingleton<VenueLocationInterceptor>();
         services.AddSqlServer(configuration);
+        services.AddRepositories();
 
         return services;
     }
@@ -53,6 +64,17 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<FixturesDbContext>());
+
+        return services;
+    }
+
+    private static IServiceCollection AddRepositories(this IServiceCollection services)
+    {
+        services.AddScoped<IFixtureRepository, FixtureRepository>();
+        services.AddScoped<IVenueRepository, VenueRepository>();
+        services.AddScoped<ILeagueRepository, LeagueRepository>();
+        services.AddScoped<ISeasonRepository, SeasonRepository>();
+        services.AddScoped<ISportRepository, SportRepository>();
 
         return services;
     }
