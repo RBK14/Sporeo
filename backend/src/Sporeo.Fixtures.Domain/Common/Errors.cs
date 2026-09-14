@@ -46,6 +46,13 @@ public static class Errors
         /// Returned when a fixture status transition is not allowed.
         /// </summary>
         public static readonly Error InvalidStatusTransition = new("Fixture.InvalidStatusTransition", "The requested status transition is not allowed.");
+
+        /// <summary>
+        /// Returned when a fixture with the specified identifier cannot be found.
+        /// </summary>
+        /// <param name="fixtureId">The identifier of the fixture that could not be found.</param>
+        public static Error NotFound(Guid fixtureId) =>
+            new("Fixture.NotFound", $"Fixture with ID '{fixtureId}' was not found.");
     }
 
     /// <summary>
@@ -77,6 +84,13 @@ public static class Errors
         /// Returned when external synchronization is attempted on a manually edited venue.
         /// </summary>
         public static readonly Error LockedForSync = new("Venue.LockedForSync", "Cannot synchronize a venue that has been manually edited.");
+
+        /// <summary>
+        /// Returned when a venue with the specified identifier cannot be found.
+        /// </summary>
+        /// <param name="venueId">The identifier of the venue that could not be found.</param>
+        public static Error NotFound(Guid venueId) =>
+            new("Venue.NotFound", $"Venue with ID '{venueId}' was not found.");
 
         /// <summary>
         /// Errors related to venue geographic coordinates.

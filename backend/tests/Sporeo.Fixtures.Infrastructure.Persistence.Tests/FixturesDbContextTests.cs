@@ -154,6 +154,7 @@ public sealed class FixturesDbContextTests : IDisposable
         provider.GetService<VenueLocationInterceptor>().Should().NotBeNull();
         provider.GetService<IUnitOfWork>().Should().NotBeNull();
         provider.GetService<IPublisher>().Should().NotBeNull();
+        provider.GetService<ISqlConnectionFactory>().Should().NotBeNull();
     }
 
     public void Dispose()
