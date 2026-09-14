@@ -26,7 +26,9 @@ public static class DependencyInjection
             configuration.AddOpenBehavior(typeof(TransactionBehavior<,>));
         });
 
-        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+        services.AddValidatorsFromAssembly(
+            typeof(DependencyInjection).Assembly,
+            includeInternalTypes: true);
 
         return services;
     }
