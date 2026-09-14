@@ -11,6 +11,7 @@ using DomainCoordinates = Sporeo.Fixtures.Domain.Venues.ValueObjects.Coordinates
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;
 
+[Collection(SqlServerCollection.Name)]
 public sealed class SpatialIndexSqlServerTests
 {
     private const string DatabaseName = "SporeoFixturesSpatialTests";
