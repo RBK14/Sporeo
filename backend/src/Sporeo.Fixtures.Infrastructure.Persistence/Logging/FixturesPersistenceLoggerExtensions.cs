@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Logging;
 
 /// <summary>
 /// Provides high-performance logging extension methods used by Fixtures persistence.

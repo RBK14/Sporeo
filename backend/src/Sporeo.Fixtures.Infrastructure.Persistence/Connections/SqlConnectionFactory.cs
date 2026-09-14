@@ -2,7 +2,7 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using System.Data;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Connections;
 
 internal sealed class SqlConnectionFactory(string connectionString) : ISqlConnectionFactory
 {

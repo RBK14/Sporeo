@@ -8,8 +8,14 @@ using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Domain.Time;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence;
 using Sporeo.Fixtures.Application;
+using Sporeo.Fixtures.Domain.Fixtures;
+using Sporeo.Fixtures.Domain.Leagues;
+using Sporeo.Fixtures.Domain.Seasons;
+using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Infrastructure.Persistence;
+using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
+using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
 using DomainCoordinates = Sporeo.Fixtures.Domain.Venues.ValueObjects.Coordinates;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;
@@ -155,6 +161,11 @@ public sealed class FixturesDbContextTests : IDisposable
         provider.GetService<IUnitOfWork>().Should().NotBeNull();
         provider.GetService<IPublisher>().Should().NotBeNull();
         provider.GetService<ISqlConnectionFactory>().Should().NotBeNull();
+        provider.GetService<IFixtureRepository>().Should().NotBeNull();
+        provider.GetService<IVenueRepository>().Should().NotBeNull();
+        provider.GetService<ILeagueRepository>().Should().NotBeNull();
+        provider.GetService<ISeasonRepository>().Should().NotBeNull();
+        provider.GetService<ISportRepository>().Should().NotBeNull();
     }
 
     public void Dispose()
