@@ -3,6 +3,7 @@ using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Application.Pagination;
 using Sporeo.BuildingBlocks.Domain.Results;
+using Sporeo.Fixtures.Application.Fixtures.Queries.Common;
 
 namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtures;
 
@@ -17,37 +18,21 @@ internal sealed class GetFixturesQueryHandler(
         parameters.Add("Offset", request.Pagination.Offset);
         parameters.Add("PageSize", request.Pagination.PageSize);
 
-        var whereClauses = new List<string> { "f.IsDeleted = 0" };
-
-        if (request.Filters.SportId.HasValue)
+        var whereClauses = new List<string>
         {
-            whereClauses.Add("f.SportId = @SportId");
-            parameters.Add("SportId", request.Filters.SportId.Value);
-        }
+            "f.IsDeleted = 0",
+            "s.IsDeleted = 0"
+        };
 
-        if (request.Filters.LeagueId.HasValue)
-        {
-            whereClauses.Add("f.LeagueId = @LeagueId");
-            parameters.Add("LeagueId", request.Filters.LeagueId.Value);
-        }
-
-        if (request.Filters.DateFrom.HasValue)
-        {
-            whereClauses.Add("f.StartDate >= @DateFrom");
-            parameters.Add("DateFrom", request.Filters.DateFrom.Value);
-        }
-
-        if (request.Filters.DateTo.HasValue)
-        {
-            whereClauses.Add("f.StartDate <= @DateTo");
-            parameters.Add("DateTo", request.Filters.DateTo.Value);
-        }
+        FixtureFilterSql.Append(whereClauses, parameters, request.Filters);
 
         string whereSql = string.Join(" AND ", whereClauses);
 
         string sql = $"""
-            SELECT COUNT (*)
-            FROM Fixtures f
+            SELECT COUNT(*)
+            FROM fixtures f
+            INNER JOIN sports s ON f.SportId = s.Id
+            LEFT JOIN leagues l ON f.LeagueId = l.Id AND l.IsDeleted = 0
             WHERE {whereSql};
 
             SELECT
@@ -56,11 +41,11 @@ internal sealed class GetFixturesQueryHandler(
                 f.StartDate,
                 s.Name AS SportName,
                 l.Name AS LeagueName
-            FROM Fixtures f
-            INNER JOIN Sports s ON f.SportId = s.Id
-            LEFT JOIN Leagues l ON f.LeagueId = l.Id
+            FROM fixtures f
+            INNER JOIN sports s ON f.SportId = s.Id
+            LEFT JOIN leagues l ON f.LeagueId = l.Id AND l.IsDeleted = 0
             WHERE {whereSql}
-            ORDER BY f.StartDate ASC
+            ORDER BY f.StartDate ASC, f.Id ASC
             OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;
             """;
 

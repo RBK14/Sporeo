@@ -19,9 +19,9 @@ internal sealed class GetVenueDetailsQueryHandler(ISqlConnectionFactory sqlConne
                 v.Street,
                 v.City,
                 v.Country,
-                v.Latitude,
-                v.Longitude
-            FROM Venues v
+                CAST(v.Latitude AS float) AS Latitude,
+                CAST(v.Longitude AS float) AS Longitude
+            FROM venues v
             WHERE v.Id = @VenueId AND v.IsDeleted = 0
             """;
 
@@ -32,7 +32,7 @@ internal sealed class GetVenueDetailsQueryHandler(ISqlConnectionFactory sqlConne
 
         var venue = await connection.QueryFirstOrDefaultAsync<VenueDetailsResponse>(command);
 
-        if (venue == null)
+        if (venue is null)
             return Result.Failure<VenueDetailsResponse>(Errors.Venue.NotFound(request.VenueId));
 
         return Result.Success(venue);

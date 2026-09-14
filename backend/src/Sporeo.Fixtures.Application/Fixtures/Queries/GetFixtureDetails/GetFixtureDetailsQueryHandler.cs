@@ -15,17 +15,26 @@ internal sealed class GetFixtureDetailsQueryHandler(ISqlConnectionFactory sqlCon
 
         const string sql = """
             SELECT
-                f.Id, f.Name, f.StartDate, f.Status,
-                v.Id, v.Name, v.Street, v.City, v.Country,
-                spo.Id, spo.Name,
-                l.Id, l.Name,
-                sea.Id, sea.Name
-
-            FROM Fixtures f
-            LEFT JOIN venues v ON f.VenueId = v.Id
-            INNER JOIN sports spo ON f.SportId = spo.Id
-            LEFT JOIN leagues l ON f.LeagueId = l.Id
-            LEFT JOIN seasons sea ON f.SeasonId = sea.Id
+                f.Id,
+                f.Name,
+                f.StartDate,
+                f.Status,
+                v.Id AS VenueId,
+                v.Name AS VenueName,
+                v.Street AS VenueStreet,
+                v.City AS VenueCity,
+                v.Country AS VenueCountry,
+                spo.Id AS SportId,
+                spo.Name AS SportName,
+                l.Id AS LeagueId,
+                l.Name AS LeagueName,
+                sea.Id AS SeasonId,
+                sea.Name AS SeasonName
+            FROM fixtures f
+            LEFT JOIN venues v ON f.VenueId = v.Id AND v.IsDeleted = 0
+            INNER JOIN sports spo ON f.SportId = spo.Id AND spo.IsDeleted = 0
+            LEFT JOIN leagues l ON f.LeagueId = l.Id AND l.IsDeleted = 0
+            LEFT JOIN seasons sea ON f.SeasonId = sea.Id AND sea.IsDeleted = 0
             WHERE f.Id = @FixtureId AND f.IsDeleted = 0
             """;
 
@@ -34,45 +43,59 @@ internal sealed class GetFixtureDetailsQueryHandler(ISqlConnectionFactory sqlCon
             new { request.FixtureId },
             cancellationToken: cancellationToken);
 
-        var result = await connection.QueryAsync<
-            FixtureRow,
-            FixtureVenueDto,
-            FixtureSportDto,
-            FixtureLeagueDto,
-            FixtureSeasonDto,
-            FixtureDetailsResponse>(
-            command,
-            MapFixtureDetails,
-            splitOn: "Id,Id,Id,Id");
+        var row = await connection.QuerySingleOrDefaultAsync<FixtureDetailsRow>(command);
 
-        var fixtureResponse = result.FirstOrDefault();
-
-        if (fixtureResponse is null)
+        if (row is null)
             return Result.Failure<FixtureDetailsResponse>(Errors.Fixture.NotFound(request.FixtureId));
 
-        return Result.Success(fixtureResponse);
+        return Result.Success(MapFixtureDetails(row));
     }
 
-    private sealed record FixtureRow(
-        Guid Id,
-        string Name,
-        DateTimeOffset StartDate,
-        FixtureStatus Status);
-
-    private static FixtureDetailsResponse MapFixtureDetails(
-        FixtureRow fixture,
-        FixtureVenueDto venue,
-        FixtureSportDto sport,
-        FixtureLeagueDto league,
-        FixtureSeasonDto season)
+    private sealed class FixtureDetailsRow
     {
+        public Guid Id { get; init; }
+        public string Name { get; init; } = null!;
+        public DateTimeOffset StartDate { get; init; }
+        public FixtureStatus Status { get; init; }
+        public Guid? VenueId { get; init; }
+        public string? VenueName { get; init; }
+        public string? VenueStreet { get; init; }
+        public string? VenueCity { get; init; }
+        public string? VenueCountry { get; init; }
+        public Guid SportId { get; init; }
+        public string SportName { get; init; } = null!;
+        public Guid? LeagueId { get; init; }
+        public string? LeagueName { get; init; }
+        public Guid? SeasonId { get; init; }
+        public string? SeasonName { get; init; }
+    }
+
+    private static FixtureDetailsResponse MapFixtureDetails(FixtureDetailsRow row)
+    {
+        FixtureVenueDto? venue = row.VenueId is null
+            ? null
+            : new FixtureVenueDto(
+                row.VenueId.Value,
+                row.VenueName!,
+                row.VenueStreet,
+                row.VenueCity,
+                row.VenueCountry);
+
+        FixtureLeagueDto? league = row.LeagueId is null
+            ? null
+            : new FixtureLeagueDto(row.LeagueId.Value, row.LeagueName!);
+
+        FixtureSeasonDto? season = row.SeasonId is null
+            ? null
+            : new FixtureSeasonDto(row.SeasonId.Value, row.SeasonName!);
+
         return new FixtureDetailsResponse(
-            fixture.Id,
-            fixture.Name,
-            fixture.StartDate,
-            fixture.Status,
+            row.Id,
+            row.Name,
+            row.StartDate,
+            row.Status,
             venue,
-            sport,
+            new FixtureSportDto(row.SportId, row.SportName),
             league,
             season);
     }

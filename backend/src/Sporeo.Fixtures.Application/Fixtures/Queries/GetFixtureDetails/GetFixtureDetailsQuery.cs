@@ -2,6 +2,8 @@
 
 namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtureDetails;
 
-public sealed record GetFixtureDetailsQuery(Guid FixtureId) : IQuery<FixtureDetailsResponse>
-{
-}
+/// <summary>
+/// Query that retrieves detailed information for a single fixture.
+/// </summary>
+/// <param name="FixtureId">The identifier of the fixture to retrieve.</param>
+public sealed record GetFixtureDetailsQuery(Guid FixtureId) : IQuery<FixtureDetailsResponse>;
