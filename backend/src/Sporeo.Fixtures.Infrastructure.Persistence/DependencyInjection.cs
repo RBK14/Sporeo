@@ -32,6 +32,8 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("fixtures-db")
             ?? throw new InvalidOperationException("Connection string 'fixtures-db' was not found.");
 
+        services.AddSingleton<ISqlConnectionFactory>(_ => new SqlConnectionFactory(connectionString));
+
         services.AddDbContext<FixturesDbContext>((sp, options) =>
         {
             options.AddInterceptors(
