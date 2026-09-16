@@ -23,7 +23,7 @@ public static class DependencyInjection
             configuration.AddOpenBehavior(typeof(ValidationBehavior<,>));
             configuration.AddOpenBehavior(typeof(PerformanceBehavior<,>));
             configuration.AddOpenBehavior(typeof(QueryCachingBehavior<,>));
-            configuration.AddOpenBehavior(typeof(TransactionBehavior<,>));
+            configuration.AddOpenBehavior(typeof(CommitBehavior<,>));
         });
 
         services.AddValidatorsFromAssembly(

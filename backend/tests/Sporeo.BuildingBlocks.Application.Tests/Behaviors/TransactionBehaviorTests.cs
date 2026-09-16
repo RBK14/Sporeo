@@ -16,9 +16,9 @@ public class TransactionBehaviorTests
     public async Task Handle_WithSuccessfulResult_ShouldCommitUnitOfWork()
     {
         var unitOfWork = Substitute.For<IUnitOfWork>();
-        var behavior = new TransactionBehavior<TestCommand, Result>(
+        var behavior = new CommitBehavior<TestCommand, Result>(
             unitOfWork,
-            NullLogger<TransactionBehavior<TestCommand, Result>>.Instance);
+            NullLogger<CommitBehavior<TestCommand, Result>>.Instance);
 
         var result = await behavior.Handle(
             new TestCommand(),
@@ -33,9 +33,9 @@ public class TransactionBehaviorTests
     public async Task Handle_WithFailedResult_ShouldSkipCommit()
     {
         var unitOfWork = Substitute.For<IUnitOfWork>();
-        var behavior = new TransactionBehavior<TestCommand, Result>(
+        var behavior = new CommitBehavior<TestCommand, Result>(
             unitOfWork,
-            NullLogger<TransactionBehavior<TestCommand, Result>>.Instance);
+            NullLogger<CommitBehavior<TestCommand, Result>>.Instance);
 
         var result = await behavior.Handle(
             new TestCommand(),

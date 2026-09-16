@@ -15,14 +15,14 @@ namespace Sporeo.BuildingBlocks.Application.Behaviors;
 /// <typeparam name="TResponse">The type of the response returned by the handler.</typeparam>
 /// <param name="unitOfWork">The unit of work used to persist changes.</param>
 /// <param name="logger">The logger used to record unit-of-work lifecycle events.</param>
-public class TransactionBehavior<TRequest, TResponse>(
+public class CommitBehavior<TRequest, TResponse>(
     IUnitOfWork unitOfWork,
-    ILogger<TransactionBehavior<TRequest, TResponse>> logger)
+    ILogger<CommitBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IBaseCommand
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly ILogger<TransactionBehavior<TRequest, TResponse>> _logger = logger;
+    private readonly ILogger<CommitBehavior<TRequest, TResponse>> _logger = logger;
 
     /// <inheritdoc />
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
