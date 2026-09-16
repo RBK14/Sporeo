@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Sporeo.Fixtures.Application.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons;
@@ -10,7 +11,7 @@ using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
-using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;
 

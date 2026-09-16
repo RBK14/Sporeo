@@ -20,7 +20,7 @@ internal sealed class GetFixturesQueryValidator : AbstractValidator<GetFixturesQ
             .WithErrorCode("FixtureFilters.Required")
             .WithMessage("Filters are required.");
 
-        FixtureQueryValidationRules.ApplyPaginationRules(this, query => query.Pagination);
-        FixtureQueryValidationRules.ApplyFixtureFilterRules(this, query => query.Filters);
+        PagedQueryValidationRules.ApplyPaginationRules(this, query => query.Pagination);
+        PagedQueryValidationRules.ApplyFixtureFilterRules(this, query => query.Filters);
     }
 }

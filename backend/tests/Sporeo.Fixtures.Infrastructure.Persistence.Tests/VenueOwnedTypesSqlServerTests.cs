@@ -7,7 +7,7 @@ using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Persistence;
-using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;
 

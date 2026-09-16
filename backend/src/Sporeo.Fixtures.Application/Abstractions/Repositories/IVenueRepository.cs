@@ -1,6 +1,7 @@
+using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
-namespace Sporeo.Fixtures.Domain.Venues;
+namespace Sporeo.Fixtures.Application.Abstractions.Repositories;
 
 /// <summary>
 /// Persistence port for <see cref="Venue"/> aggregates.

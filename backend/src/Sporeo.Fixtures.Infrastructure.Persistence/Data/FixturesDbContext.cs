@@ -11,7 +11,7 @@ using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Venues;
 using System.Linq.Expressions;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Data;
 
 /// <summary>
 /// EF Core database context for the Fixtures bounded context.

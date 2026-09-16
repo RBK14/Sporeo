@@ -4,16 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence;
-using Sporeo.Fixtures.Domain.Fixtures;
-using Sporeo.Fixtures.Domain.Leagues;
-using Sporeo.Fixtures.Domain.Seasons;
-using Sporeo.Fixtures.Domain.Sports;
-using Sporeo.Fixtures.Domain.Venues;
-using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
-using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
-using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
+using Sporeo.Fixtures.Application.Abstractions.ReadModel;
+using Sporeo.Fixtures.Application.Abstractions.Repositories;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data.ReadModel;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data.Repositories;
+using Sporeo.Fixtures.Infrastructure.Persistence.Extensions;
 using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
-using Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence;
 
@@ -75,6 +72,8 @@ public static class DependencyInjection
         services.AddScoped<ILeagueRepository, LeagueRepository>();
         services.AddScoped<ISeasonRepository, SeasonRepository>();
         services.AddScoped<ISportRepository, SportRepository>();
+        services.AddScoped<IFixtureReadStore, FixtureReadStore>();
+        services.AddScoped<IVenueReadStore, VenueReadStore>();
 
         return services;
     }

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.Configurations;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Data.Configurations;
 
 /// <summary>
 /// EF Core mapping for <see cref="Sport"/>.

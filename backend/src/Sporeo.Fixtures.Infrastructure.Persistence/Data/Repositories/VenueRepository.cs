@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Sporeo.Fixtures.Application.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
-using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Data.Repositories;
 
 internal sealed class VenueRepository(FixturesDbContext dbContext) : IVenueRepository
 {

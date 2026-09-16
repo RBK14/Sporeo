@@ -1,6 +1,7 @@
+using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
-namespace Sporeo.Fixtures.Domain.Sports;
+namespace Sporeo.Fixtures.Application.Abstractions.Repositories;
 
 /// <summary>
 /// Persistence port for <see cref="Sport"/> aggregates.

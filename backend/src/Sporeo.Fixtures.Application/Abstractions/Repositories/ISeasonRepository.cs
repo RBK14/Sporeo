@@ -1,6 +1,7 @@
+using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 
-namespace Sporeo.Fixtures.Domain.Seasons;
+namespace Sporeo.Fixtures.Application.Abstractions.Repositories;
 
 /// <summary>
 /// Persistence port for <see cref="Season"/> aggregates.

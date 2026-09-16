@@ -1,6 +1,7 @@
+using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 
-namespace Sporeo.Fixtures.Domain.Leagues;
+namespace Sporeo.Fixtures.Application.Abstractions.Repositories;
 
 /// <summary>
 /// Persistence port for <see cref="League"/> aggregates.

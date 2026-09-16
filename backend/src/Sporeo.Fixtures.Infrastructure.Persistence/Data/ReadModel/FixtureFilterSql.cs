@@ -1,11 +1,8 @@
 using Dapper;
 using Sporeo.Fixtures.Application.Fixtures.Queries.Common;
 
-namespace Sporeo.Fixtures.Application.Fixtures.Queries.Common;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Data.ReadModel;
 
-/// <summary>
-/// Builds shared SQL filter clauses for fixture list queries.
-/// </summary>
 internal static class FixtureFilterSql
 {
     public static void Append(

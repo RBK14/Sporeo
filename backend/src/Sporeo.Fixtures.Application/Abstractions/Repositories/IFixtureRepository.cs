@@ -1,6 +1,7 @@
+using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
 
-namespace Sporeo.Fixtures.Domain.Fixtures;
+namespace Sporeo.Fixtures.Application.Abstractions.Repositories;
 
 /// <summary>
 /// Persistence port for <see cref="Fixture"/> aggregates.

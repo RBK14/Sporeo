@@ -7,7 +7,7 @@ using NetTopologySuite.Geometries;
 using Sporeo.Fixtures.Application;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Infrastructure.Persistence;
-using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data;
 using DomainCoordinates = Sporeo.Fixtures.Domain.Venues.ValueObjects.Coordinates;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;

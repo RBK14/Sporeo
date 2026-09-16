@@ -7,7 +7,7 @@ namespace Sporeo.Fixtures.Application.Common.Validation;
 /// <summary>
 /// Shared FluentValidation rules for fixture query contracts.
 /// </summary>
-internal static class FixtureQueryValidationRules
+internal static class PagedQueryValidationRules
 {
     public const int MaxPageSize = 100;
 

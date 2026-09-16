@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Sporeo.Fixtures.Application.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
-using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Data.Repositories;
 
 internal sealed class SportRepository(FixturesDbContext dbContext) : ISportRepository
 {

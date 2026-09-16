@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using NetTopologySuite.Geometries;
 using Sporeo.Fixtures.Domain.Venues;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Extensions;
 
 /// <summary>
 /// Synchronizes the <c>Location</c> geography shadow property from venue coordinates

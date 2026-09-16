@@ -11,7 +11,7 @@ using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.Configurations;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Data.Configurations;
 
 /// <summary>
 /// EF Core mapping for <see cref="Fixture"/>.

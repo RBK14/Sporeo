@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
-using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data;
 
 #nullable disable
 

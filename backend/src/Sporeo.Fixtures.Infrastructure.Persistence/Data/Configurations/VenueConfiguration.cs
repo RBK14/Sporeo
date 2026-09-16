@@ -4,7 +4,7 @@ using NetTopologySuite.Geometries;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.Configurations;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.Data.Configurations;
 
 /// <summary>
 /// EF Core mapping for <see cref="Venue"/>, including owned address/coordinates and the indexed geography location.

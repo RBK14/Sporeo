@@ -8,14 +8,15 @@ using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Domain.Time;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence;
 using Sporeo.Fixtures.Application;
+using Sporeo.Fixtures.Application.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Infrastructure.Persistence;
-using Sporeo.Fixtures.Infrastructure.Persistence.Contexts;
-using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data;
+using Sporeo.Fixtures.Infrastructure.Persistence.Extensions;
 using DomainCoordinates = Sporeo.Fixtures.Domain.Venues.ValueObjects.Coordinates;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;
