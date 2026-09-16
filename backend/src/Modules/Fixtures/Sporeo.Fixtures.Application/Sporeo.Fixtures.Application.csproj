@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sporeo.BuildingBlocks.Application\Sporeo.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Sporeo.BuildingBlocks.Application\Sporeo.BuildingBlocks.Application.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Domain\Sporeo.Fixtures.Domain.csproj" />
   </ItemGroup>
 

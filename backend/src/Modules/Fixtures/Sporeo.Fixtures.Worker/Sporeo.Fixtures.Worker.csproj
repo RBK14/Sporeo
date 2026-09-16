@@ -11,7 +11,7 @@
     <ProjectReference Include="..\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure.Integration\Sporeo.Fixtures.Infrastructure.Integration.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure.Persistence\Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
-    <ProjectReference Include="..\Sporeo.ServiceDefaults\Sporeo.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\Platform\Sporeo.ServiceDefaults\Sporeo.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>

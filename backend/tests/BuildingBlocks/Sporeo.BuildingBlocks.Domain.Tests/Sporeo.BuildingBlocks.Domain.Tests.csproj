@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Sporeo.BuildingBlocks.Domain\Sporeo.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\..\src\BuildingBlocks\Sporeo.BuildingBlocks.Domain\Sporeo.BuildingBlocks.Domain.csproj" />
   </ItemGroup>
 
   <ItemGroup>

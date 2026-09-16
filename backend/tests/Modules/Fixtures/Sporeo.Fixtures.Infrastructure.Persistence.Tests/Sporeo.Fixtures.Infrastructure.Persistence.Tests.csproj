@@ -23,8 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
-    <ProjectReference Include="..\..\src\Sporeo.Fixtures.Infrastructure.Persistence\Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Fixtures\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Fixtures\Sporeo.Fixtures.Infrastructure.Persistence\Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -8,7 +8,7 @@ var sqlServer = builder.AddSqlServer("sql-server", password: sqlPassword)
 var fixturesDb = sqlServer.AddDatabase("fixtures-db");
 var quartzDb = sqlServer.AddDatabase("quartz-db");
 
-var fixturesApi = builder.AddProject<Projects.Sporeo_Fixtures_API>("fixtures-api")
+var fixturesApi = builder.AddProject<Projects.Sporeo_Fixtures_Api>("fixtures-api")
     .WithReference(fixturesDb)
     .WaitFor(fixturesDb);
 

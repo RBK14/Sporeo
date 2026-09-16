@@ -8,7 +8,7 @@ using Sporeo.BuildingBlocks.Domain.Results;
 
 namespace Sporeo.BuildingBlocks.Application.Tests.Behaviors;
 
-public class TransactionBehaviorTests
+public class CommitBehaviorTests
 {
     private sealed record TestCommand : ICommand;
 

@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Sporeo.Fixtures.API\Sporeo.Fixtures.API.csproj" />
-    <ProjectReference Include="..\Sporeo.Fixtures.Worker\Sporeo.Fixtures.Worker.csproj" />
+    <ProjectReference Include="..\..\Modules\Fixtures\Sporeo.Fixtures.Api\Sporeo.Fixtures.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Fixtures\Sporeo.Fixtures.Worker\Sporeo.Fixtures.Worker.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,31 +1,31 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/Sporeo.AppHost/Sporeo.AppHost.csproj" />
-    <Project Path="src/Sporeo.ServiceDefaults/Sporeo.ServiceDefaults.csproj" />
-  </Folder>
   <Folder Name="/src/BuildingBlocks/">
-    <Project Path="src/Sporeo.BuildingBlocks.Application/Sporeo.BuildingBlocks.Application.csproj" Id="9a22261f-8f56-4728-9634-b02b845641fe" />
-    <Project Path="src/Sporeo.BuildingBlocks.Domain/Sporeo.BuildingBlocks.Domain.csproj" />
-    <Project Path="src/Sporeo.BuildingBlocks.Infrastructure/Sporeo.BuildingBlocks.Infrastructure.csproj" Id="d34c2acd-7df4-4d96-a27a-eaebf8872b29" />
+    <Project Path="src/BuildingBlocks/Sporeo.BuildingBlocks.Application/Sporeo.BuildingBlocks.Application.csproj" Id="9a22261f-8f56-4728-9634-b02b845641fe" />
+    <Project Path="src/BuildingBlocks/Sporeo.BuildingBlocks.Domain/Sporeo.BuildingBlocks.Domain.csproj" />
+    <Project Path="src/BuildingBlocks/Sporeo.BuildingBlocks.Infrastructure/Sporeo.BuildingBlocks.Infrastructure.csproj" Id="d34c2acd-7df4-4d96-a27a-eaebf8872b29" />
   </Folder>
-  <Folder Name="/src/Fixtures/">
-    <Project Path="src/Sporeo.Fixtures.API/Sporeo.Fixtures.API.csproj" />
-    <Project Path="src/Sporeo.Fixtures.Application/Sporeo.Fixtures.Application.csproj" />
-    <Project Path="src/Sporeo.Fixtures.Domain/Sporeo.Fixtures.Domain.csproj" />
-    <Project Path="src/Sporeo.Fixtures.Infrastructure.Integration/Sporeo.Fixtures.Infrastructure.Integration.csproj" Id="83b758a0-9b77-44e9-8e4c-593afc0e8972" />
-    <Project Path="src/Sporeo.Fixtures.Infrastructure.Persistence/Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
-    <Project Path="src/Sporeo.Fixtures.Worker/Sporeo.Fixtures.Worker.csproj" />
+  <Folder Name="/src/Modules/Fixtures/">
+    <Project Path="src/Modules/Fixtures/Sporeo.Fixtures.Api/Sporeo.Fixtures.Api.csproj" />
+    <Project Path="src/Modules/Fixtures/Sporeo.Fixtures.Application/Sporeo.Fixtures.Application.csproj" />
+    <Project Path="src/Modules/Fixtures/Sporeo.Fixtures.Domain/Sporeo.Fixtures.Domain.csproj" />
+    <Project Path="src/Modules/Fixtures/Sporeo.Fixtures.Infrastructure.Integration/Sporeo.Fixtures.Infrastructure.Integration.csproj" Id="83b758a0-9b77-44e9-8e4c-593afc0e8972" />
+    <Project Path="src/Modules/Fixtures/Sporeo.Fixtures.Infrastructure.Persistence/Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
+    <Project Path="src/Modules/Fixtures/Sporeo.Fixtures.Worker/Sporeo.Fixtures.Worker.csproj" />
   </Folder>
-  <Folder Name="/tests/" />
+  <Folder Name="/src/Platform/">
+    <Project Path="src/Platform/Sporeo.AppHost/Sporeo.AppHost.csproj" />
+    <Project Path="src/Platform/Sporeo.ServiceDefaults/Sporeo.ServiceDefaults.csproj" />
+  </Folder>
   <Folder Name="/tests/BuildingBlocks/">
-    <Project Path="tests/Sporeo.BuildingBlocks.Application.Tests/Sporeo.BuildingBlocks.Application.Tests.csproj" />
-    <Project Path="tests/Sporeo.BuildingBlocks.Domain.Tests/Sporeo.BuildingBlocks.Domain.Tests.csproj" />
+    <Project Path="tests/BuildingBlocks/Sporeo.BuildingBlocks.Application.Tests/Sporeo.BuildingBlocks.Application.Tests.csproj" />
+    <Project Path="tests/BuildingBlocks/Sporeo.BuildingBlocks.Domain.Tests/Sporeo.BuildingBlocks.Domain.Tests.csproj" />
   </Folder>
-  <Folder Name="/tests/Fixtures/">
-    <Project Path="tests/Sporeo.Fixtures.Application.Tests/Sporeo.Fixtures.Application.Tests.csproj" />
-    <Project Path="tests/Sporeo.Fixtures.Domain.Tests/Sporeo.Fixtures.Domain.Tests.csproj" />
-    <Project Path="tests/Sporeo.Fixtures.Infrastructure.Integration.Tests/Sporeo.Fixtures.Infrastructure.Integration.Tests.csproj" />
-    <Project Path="tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests.csproj" />
-    <Project Path="tests/Sporeo.Fixtures.Worker.Tests/Sporeo.Fixtures.Worker.Tests.csproj" />
+  <Folder Name="/tests/Modules/Fixtures/">
+    <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Application.Tests/Sporeo.Fixtures.Application.Tests.csproj" />
+    <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Domain.Tests/Sporeo.Fixtures.Domain.Tests.csproj" />
+    <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Infrastructure.Integration.Tests/Sporeo.Fixtures.Infrastructure.Integration.Tests.csproj" />
+    <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Infrastructure.Persistence.Tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests.csproj" />
+    <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Worker.Tests/Sporeo.Fixtures.Worker.Tests.csproj" />
   </Folder>
 </Solution>
+
