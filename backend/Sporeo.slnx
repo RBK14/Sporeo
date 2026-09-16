@@ -12,6 +12,7 @@
     <Project Path="src/Sporeo.Fixtures.API/Sporeo.Fixtures.API.csproj" />
     <Project Path="src/Sporeo.Fixtures.Application/Sporeo.Fixtures.Application.csproj" />
     <Project Path="src/Sporeo.Fixtures.Domain/Sporeo.Fixtures.Domain.csproj" />
+    <Project Path="src/Sporeo.Fixtures.Infrastructure.Integration/Sporeo.Fixtures.Infrastructure.Integration.csproj" Id="83b758a0-9b77-44e9-8e4c-593afc0e8972" />
     <Project Path="src/Sporeo.Fixtures.Infrastructure.Persistence/Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
     <Project Path="src/Sporeo.Fixtures.Worker/Sporeo.Fixtures.Worker.csproj" />
   </Folder>
@@ -23,6 +24,7 @@
   <Folder Name="/tests/Fixtures/">
     <Project Path="tests/Sporeo.Fixtures.Application.Tests/Sporeo.Fixtures.Application.Tests.csproj" />
     <Project Path="tests/Sporeo.Fixtures.Domain.Tests/Sporeo.Fixtures.Domain.Tests.csproj" />
+    <Project Path="tests/Sporeo.Fixtures.Infrastructure.Integration.Tests/Sporeo.Fixtures.Infrastructure.Integration.Tests.csproj" />
     <Project Path="tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests.csproj" />
   </Folder>
 </Solution>
