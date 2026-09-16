@@ -5,19 +5,24 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NetTopologySuite.Geometries;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
+using Sporeo.BuildingBlocks.Application.Abstractions.Messaging;
 using Sporeo.BuildingBlocks.Domain.Time;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence;
 using Sporeo.Fixtures.Application;
+using ApplicationDependencyInjection = Sporeo.Fixtures.Application.DependencyInjection;
 using Sporeo.Fixtures.Application.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Venues;
+using Sporeo.Fixtures.Domain.Venues.Events;
+using Sporeo.BuildingBlocks.Infrastructure.Outbox;
+using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Persistence;
-using Sporeo.Fixtures.Infrastructure.Persistence.Data;
-using Sporeo.Fixtures.Infrastructure.Persistence.Extensions;
 using DomainCoordinates = Sporeo.Fixtures.Domain.Venues.ValueObjects.Coordinates;
+using Sporeo.Fixtures.Infrastructure.Persistence.Extensions;
+using Sporeo.Fixtures.Infrastructure.Persistence.Data;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;
 
@@ -33,6 +38,10 @@ public sealed class FixturesDbContextTests : IDisposable
 
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton<IDomainEventTypeRegistry>(_ => new DomainEventTypeRegistry(
+        [
+            new KeyValuePair<string, Type>(ApplicationDependencyInjection.VenueCreatedDomainEventTypeKey, typeof(VenueCreatedDomainEvent))
+        ]));
         services.AddMediatR(configuration =>
             configuration.RegisterServicesFromAssembly(typeof(FixturesDbContextTests).Assembly));
         services.AddSingleton<AuditableEntityInterceptor>();
@@ -141,6 +150,24 @@ public sealed class FixturesDbContextTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveChangesAsync_PersistsVenueAndOutboxMessageAtomically()
+    {
+        var venue = Venue.CreateFromProvider(
+            "Wembley",
+            "TheSportsDB",
+            "venue-1",
+            Address.Create(null, "London", "England").Value).Value;
+
+        _dbContext.Venues.Add(venue);
+        await _dbContext.SaveChangesAsync();
+
+        var outbox = await _dbContext.OutboxMessages.SingleAsync();
+        outbox.Type.Should().Be(ApplicationDependencyInjection.VenueCreatedDomainEventTypeKey);
+        outbox.Status.Should().Be(OutboxMessageStatus.Pending);
+        venue.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
     public void DependencyInjection_RegistersUnitOfWorkAndInterceptors()
     {
         var configuration = new ConfigurationBuilder()
@@ -180,6 +207,10 @@ public sealed class FixturesDbContextTests : IDisposable
     {
         var services = new ServiceCollection();
         services.AddLogging();
+        services.AddSingleton<IDomainEventTypeRegistry>(_ => new DomainEventTypeRegistry(
+        [
+            new KeyValuePair<string, Type>(ApplicationDependencyInjection.VenueCreatedDomainEventTypeKey, typeof(VenueCreatedDomainEvent))
+        ]));
         services.AddMediatR(configuration =>
             configuration.RegisterServicesFromAssembly(typeof(FixturesDbContextTests).Assembly));
         services.AddSingleton<AuditableEntityInterceptor>();

@@ -1,6 +1,7 @@
 ﻿using Sporeo.BuildingBlocks.Domain.Models;
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Domain.Common;
+using Sporeo.Fixtures.Domain.Venues.Events;
 using Sporeo.Fixtures.Domain.Venues.Rules;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
@@ -95,7 +96,7 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
         if (providerValidation.IsFailure)
             return Result.Failure<Venue>(providerValidation.Error);
 
-        return new Venue(
+        var venue = new Venue(
             VenueId.New(),
             name,
             address,
@@ -103,6 +104,10 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
             providerName,
             providerId,
             false);
+
+        venue.AddDomainEvent(new VenueCreatedDomainEvent(venue.Id.Value));
+
+        return venue;
     }
 
     /// <summary>
@@ -121,7 +126,7 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
         if (nameValidation.IsFailure)
             return Result.Failure<Venue>(nameValidation.Error);
 
-        return new Venue(
+        var venue = new Venue(
             VenueId.New(),
             name,
             address,
@@ -129,6 +134,10 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
             null,
             null,
             true);
+
+        venue.AddDomainEvent(new VenueCreatedDomainEvent(venue.Id.Value));
+
+        return venue;
     }
 
     /// <summary>
@@ -182,6 +191,23 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
 
         UpdateCoreFields(name, address, coordinates);
         IsManuallyEdited = true;
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Updates venue address and coordinates without changing the display name.
+    /// </summary>
+    /// <param name="address">The postal address to apply, if any.</param>
+    /// <param name="coordinates">The geographic coordinates to apply, if any.</param>
+    /// <returns>A successful result when the venue can be modified; otherwise a failure.</returns>
+    public Result UpdateLocation(Address? address, Coordinates? coordinates)
+    {
+        var guard = EnsureModifiable();
+        if (guard.IsFailure)
+            return guard;
+
+        UpdateCoreFields(Name, address, coordinates);
 
         return Result.Success();
     }
