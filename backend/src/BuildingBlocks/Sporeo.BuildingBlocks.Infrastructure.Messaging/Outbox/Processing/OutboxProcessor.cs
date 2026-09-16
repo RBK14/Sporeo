@@ -73,6 +73,12 @@ public sealed class OutboxProcessor(
                     message.MarkAsFailed(ex.Message, now.AddMinutes(backoffMinutes));
                     retried++;
                 }
+
+                if (ex.Message.Contains("RateLimited") || ex is HttpRequestException { StatusCode: System.Net.HttpStatusCode.TooManyRequests })
+                {
+                    logger.LogWarning("Rate limit reached. Halting current batch processing.");
+                    break;
+                }
             }
         }
 
