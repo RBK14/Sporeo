@@ -26,6 +26,7 @@ using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
 using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
 using Sporeo.Fixtures.Infrastructure.Persistence.ReadModels;
 using Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
+using Sporeo.Fixtures.Infrastructure.Persistence.Seeding;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence;
 
@@ -53,6 +54,7 @@ public static class DependencyInjection
         ]));
         services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
         services.AddScoped<IGeocodingCache, EfCoreGeocodingCache>();
+        services.AddScoped<FixturesDatabaseSeeder>();
         services.AddSqlServer(configuration);
         services.AddRepositories();
 
@@ -117,7 +119,9 @@ public static class DependencyInjection
             var dbContext = services.GetRequiredService<FixturesDbContext>();
             await dbContext.Database.MigrateAsync();
 
-            }
+            var seeder = services.GetRequiredService<FixturesDatabaseSeeder>();
+            await seeder.SeedAsync();
+        }
         catch (Exception ex)
         {
             var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitialization");
