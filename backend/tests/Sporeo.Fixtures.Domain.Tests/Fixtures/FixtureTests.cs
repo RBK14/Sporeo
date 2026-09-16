@@ -74,6 +74,18 @@ public class FixtureTests
     }
 
     [Fact]
+    public void SyncExternalData_ShouldUpdateSeasonId()
+    {
+        var fixture = CreateProviderFixture();
+        var seasonId = SeasonId.FromValue(Guid.Parse("44444444-4444-4444-4444-444444444444"));
+
+        var result = fixture.SyncExternalData(SportId, LeagueId, seasonId, "Home vs Away", StartDate);
+
+        result.IsSuccess.Should().BeTrue();
+        fixture.SeasonId.Should().Be(seasonId);
+    }
+
+    [Fact]
     public void SyncExternalData_WhenManuallyEdited_ShouldFail()
     {
         var fixture = CreateManualFixture();

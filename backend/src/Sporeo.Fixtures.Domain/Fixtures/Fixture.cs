@@ -217,7 +217,7 @@ public sealed class Fixture : AggregateRoot<FixtureId>, IAuditable, IDeletable
         if (nameValidation.IsFailure)
             return nameValidation;
 
-        UpdateCoreFields(sportId, leagueId, name, startDate);
+        UpdateCoreFields(sportId, leagueId, seasonId, name, startDate);
 
         return Result.Success();
     }
@@ -244,7 +244,7 @@ public sealed class Fixture : AggregateRoot<FixtureId>, IAuditable, IDeletable
         if (nameValidation.IsFailure)
             return nameValidation;
 
-        UpdateCoreFields(sportId, leagueId, name, startDate);
+        UpdateCoreFields(sportId, leagueId, SeasonId, name, startDate);
         IsManuallyEdited = true;
 
         return Result.Success();
@@ -322,11 +322,13 @@ public sealed class Fixture : AggregateRoot<FixtureId>, IAuditable, IDeletable
     private void UpdateCoreFields(
         SportId sportId,
         LeagueId? leagueId,
+        SeasonId? seasonId,
         string name,
         DateTimeOffset startDate)
     {
         SportId = sportId;
         LeagueId = leagueId;
+        SeasonId = seasonId;
         Name = name;
         StartDate = startDate;
     }
