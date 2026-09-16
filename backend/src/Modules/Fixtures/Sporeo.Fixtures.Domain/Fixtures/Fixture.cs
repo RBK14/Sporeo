@@ -364,8 +364,8 @@ public sealed class Fixture : AggregateRoot<FixtureId>, IAuditable, IDeletable
         DateTimeOffset startDate)
     {
         SportId = sportId;
-        LeagueId = leagueId;
-        SeasonId = seasonId;
+        LeagueId = leagueId ?? LeagueId;
+        SeasonId = seasonId ?? SeasonId;
         Name = name;
         StartDate = startDate;
     }
