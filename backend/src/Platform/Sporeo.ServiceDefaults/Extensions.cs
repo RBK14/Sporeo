@@ -7,6 +7,7 @@ using Microsoft.Extensions.ServiceDiscovery;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Sporeo.ServiceDefaults.Telemetry;
 
 namespace Microsoft.Extensions.Hosting;
 
@@ -28,9 +29,6 @@ public static class Extensions
 
         builder.Services.ConfigureHttpClientDefaults(http =>
         {
-            // Turn on resilience by default
-            http.AddStandardResilienceHandler();
-
             // Turn on service discovery by default
             http.AddServiceDiscovery();
         });
@@ -58,7 +56,8 @@ public static class Extensions
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
-                    .AddMeter("Sporeo.Fixtures.Worker");
+                    .AddMeter("Sporeo.Fixtures.Worker")
+                    .AddMeter("Sporeo.Fixtures.Integration");
             })
             .WithTracing(tracing =>
             {
@@ -71,7 +70,19 @@ public static class Extensions
                     )
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
-                    .AddHttpClientInstrumentation();
+                    .AddHttpClientInstrumentation(options =>
+                    {
+                        options.EnrichWithHttpRequestMessage = static (activity, request) =>
+                        {
+                            if (request.RequestUri is null)
+                                return;
+
+                            var redacted = SensitiveUrlRedactor.Redact(request.RequestUri.ToString());
+                            activity.SetTag("url.full", redacted);
+                            activity.SetTag("http.url", redacted);
+                        };
+                    })
+                    .AddProcessor(new SensitiveHttpUrlRedactingProcessor());
             });
 
         builder.AddOpenTelemetryExporters();
