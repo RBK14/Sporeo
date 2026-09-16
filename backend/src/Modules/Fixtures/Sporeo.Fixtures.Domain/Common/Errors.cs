@@ -144,6 +144,13 @@ public static class Errors
         /// Returned when an operation targets a soft-deleted sport.
         /// </summary>
         public static readonly Error Deleted = new("Sport.Deleted", "Cannot modify a deleted sport.");
+
+        /// <summary>
+        /// Returned when a sport with the specified identifier cannot be found.
+        /// </summary>
+        /// <param name="sportId">The identifier of the sport that could not be found.</param>
+        public static Error NotFound(Guid sportId) =>
+            new("Sport.NotFound", $"Sport with ID '{sportId}' was not found.");
     }
 
     /// <summary>
@@ -175,6 +182,18 @@ public static class Errors
         /// Returned when external synchronization is attempted on a manually edited league.
         /// </summary>
         public static readonly Error LockedForSync = new("League.LockedForSync", "Cannot synchronize a league that has been manually edited.");
+
+        /// <summary>
+        /// Returned when a league with the specified identifier cannot be found.
+        /// </summary>
+        /// <param name="leagueId">The identifier of the league that could not be found.</param>
+        public static Error NotFound(Guid leagueId) =>
+            new("League.NotFound", $"League with ID '{leagueId}' was not found.");
+
+        /// <summary>
+        /// Returned when a league is associated with a sport that does not match the expected sport.
+        /// </summary>
+        public static readonly Error InconsistentHierarchy = new("League.InconsistentHierarchy", "The specified League does not belong to the provided Sport.");
     }
 
     /// <summary>
@@ -211,5 +230,17 @@ public static class Errors
         /// Returned when external synchronization is attempted on a manually edited season.
         /// </summary>
         public static readonly Error LockedForSync = new("Season.LockedForSync", "Cannot synchronize a season that has been manually edited.");
+
+        /// <summary>
+        /// Returned when a season with the specified identifier cannot be found.
+        /// </summary>
+        /// <param name="seasonId">The identifier of the season that could not be found.</param>
+        public static Error NotFound(Guid seasonId) =>
+            new("Season.NotFound", $"Season with ID '{seasonId}' was not found.");
+
+        /// <summary>
+        /// Returned when a season is associated with a league that does not match the expected league.
+        /// </summary>
+        public static readonly Error InconsistentHierarchy = new("Season.InconsistentHierarchy", "The specified Season does not belong to the provided League.");
     }
 }

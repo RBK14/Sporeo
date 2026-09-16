@@ -5,6 +5,13 @@ using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Abstractions.Persistence;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
+using Sporeo.Fixtures.Domain.Common;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 
@@ -12,6 +19,9 @@ namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 /// Orchestrates fixture batch synchronization by processing isolated chunks in fresh DI scopes.
 /// </summary>
 internal sealed class SyncFixturesBatchCommandHandler(
+    ISportRepository sportRepository,
+    ILeagueRepository leagueRepository,
+    ISeasonRepository seasonRepository,
     IServiceScopeFactory scopeFactory,
     IDatabaseExceptionClassifier exceptionClassifier,
     ILogger<SyncFixturesBatchCommandHandler> logger)
@@ -24,6 +34,38 @@ internal sealed class SyncFixturesBatchCommandHandler(
         SyncFixturesBatchCommand request,
         CancellationToken cancellationToken)
     {
+        var sportId = SportId.FromValue(request.SportId);
+
+        var sport = await sportRepository.GetByIdAsync(sportId, cancellationToken);
+        if (sport is null)
+            return Result.Failure<SyncBatchResultDto>(Errors.Sport.NotFound(sportId.Value));
+
+        LeagueId? leagueId = null;
+        if (request.LeagueId is not null)
+        {
+            leagueId = LeagueId.FromValue(request.LeagueId.Value);
+
+            var league = await leagueRepository.GetByIdAsync(leagueId, cancellationToken);
+            if (league is null)
+                return Result.Failure<SyncBatchResultDto>(Errors.League.NotFound(leagueId.Value));
+
+            if (league.SportId != sportId)
+                return Result.Failure<SyncBatchResultDto>(Errors.League.InconsistentHierarchy);
+        }
+
+        SeasonId? seasonId = null;
+        if (request.SeasonId is not null)
+        {
+            seasonId = SeasonId.FromValue(request.SeasonId.Value);
+
+            var season = await seasonRepository.GetByIdAsync(seasonId, cancellationToken);
+            if (season is null)
+                return Result.Failure<SyncBatchResultDto>(Errors.Season.NotFound(seasonId.Value));
+
+            if (leagueId is not null && season.LeagueId != leagueId)
+                return Result.Failure<SyncBatchResultDto>(Errors.Season.InconsistentHierarchy);
+        }
+
         var aggregate = SyncBatchResultDto.Empty;
 
         foreach (var chunk in request.Fixtures.Chunk(SyncFixturesBatchCommand.ChunkSize))
