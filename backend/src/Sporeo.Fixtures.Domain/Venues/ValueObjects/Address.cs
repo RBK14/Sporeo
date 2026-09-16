@@ -5,7 +5,7 @@ using Sporeo.Fixtures.Domain.Common;
 namespace Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 /// <summary>
-/// Represents a venue postal address composed of optional street, city, and country components.
+/// Represents a venue postal address composed of an optional street and required city and country.
 /// </summary>
 public sealed class Address : ValueObject
 {

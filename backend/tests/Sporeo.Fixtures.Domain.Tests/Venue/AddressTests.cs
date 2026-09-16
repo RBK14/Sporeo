@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Sporeo.Fixtures.Domain;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 namespace Sporeo.Fixtures.Domain.Tests.Venue;
@@ -18,27 +17,29 @@ public class AddressTests
     }
 
     [Fact]
-    public void Create_WithAllNullValues_ShouldSucceed()
+    public void Create_WithNullStreet_ShouldSucceed()
     {
-        var result = Address.Create(null, null, null);
+        var result = Address.Create(null, "Warsaw", "Poland");
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Street.Should().BeNull();
-        result.Value.City.Should().BeNull();
-        result.Value.Country.Should().BeNull();
+        result.Value.City.Should().Be("Warsaw");
+        result.Value.Country.Should().Be("Poland");
     }
 
     [Theory]
-    [InlineData(" ", null, null, "Venue.Address.EmptyStreet")]
-    [InlineData(null, " ", null, "Venue.Address.EmptyCity")]
-    [InlineData(null, null, " ", "Venue.Address.EmptyCountry")]
-    public void Create_WithWhitespaceValue_ShouldFail(
+    [InlineData(" ", "Warsaw", "Poland", "Venue.Address.EmptyStreet")]
+    [InlineData(null, " ", "Poland", "Venue.Address.EmptyCity")]
+    [InlineData(null, "Warsaw", " ", "Venue.Address.EmptyCountry")]
+    [InlineData(null, null, "Poland", "Venue.Address.EmptyCity")]
+    [InlineData(null, "Warsaw", null, "Venue.Address.EmptyCountry")]
+    public void Create_WithInvalidValues_ShouldFail(
         string? street,
         string? city,
         string? country,
         string expectedErrorCode)
     {
-        var result = Address.Create(street, city, country);
+        var result = Address.Create(street, city!, country!);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be(expectedErrorCode);
