@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -16,8 +16,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure.Persistence\Sporeo.BuildingBlocks.Infrastructure.Persistence.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure\Sporeo.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure.Messaging\Sporeo.BuildingBlocks.Infrastructure.Messaging.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
+    <ProjectReference Include="..\Sporeo.Fixtures.Domain\Sporeo.Fixtures.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sporeo.Fixtures.Infrastructure.Persistence.Tests" />
   </ItemGroup>
 
 </Project>

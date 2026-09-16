@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Sporeo.Fixtures.Infrastructure.Persistence.Data;
+using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;

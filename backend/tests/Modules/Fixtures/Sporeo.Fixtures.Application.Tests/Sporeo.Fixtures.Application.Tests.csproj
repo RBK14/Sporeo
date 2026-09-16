@@ -18,8 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\src\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure\Sporeo.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\src\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure.Messaging\Sporeo.BuildingBlocks.Infrastructure.Messaging.csproj" />
     <ProjectReference Include="..\..\..\..\src\Modules\Fixtures\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\src\Modules\Fixtures\Sporeo.Fixtures.Infrastructure.Persistence\Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
   </ItemGroup>
 
   <ItemGroup>

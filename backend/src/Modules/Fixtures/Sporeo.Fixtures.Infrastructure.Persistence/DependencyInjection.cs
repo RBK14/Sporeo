@@ -3,18 +3,25 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Application.Venues.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
+using Sporeo.Fixtures.Domain.Venues.Events;
 using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
-using Sporeo.Fixtures.Infrastructure.Persistence.Data;
+using Sporeo.Fixtures.Infrastructure.Persistence.Context;
+using Sporeo.Fixtures.Infrastructure.Persistence.Geocoding;
 using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
+using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
 using Sporeo.Fixtures.Infrastructure.Persistence.ReadModels;
 using Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
 
@@ -28,13 +35,18 @@ public static class DependencyInjection
     /// <summary>
     /// Adds the Fixtures EF Core persistence layer to the service collection.
     /// </summary>
-    /// <param name="services">The service collection to configure.</param>
-    /// <param name="configuration">The application configuration containing the connection string.</param>
-    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<AuditableEntityInterceptor>();
         services.AddSingleton<VenueLocationInterceptor>();
+        services.AddSingleton<IDomainEventTypeRegistry>(_ => new DomainEventTypeRegistry(
+        [
+            new KeyValuePair<string, Type>(
+                FixturesOutboxTypeKeys.VenueCreatedDomainEvent,
+                typeof(VenueCreatedDomainEvent))
+        ]));
+        services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
+        services.AddScoped<IGeocodingCache, EfCoreGeocodingCache>();
         services.AddSqlServer(configuration);
         services.AddRepositories();
 
@@ -87,8 +99,6 @@ public static class DependencyInjection
     /// <summary>
     /// Applies pending EF Core migrations for the Fixtures database.
     /// </summary>
-    /// <param name="serviceProvider">The root service provider.</param>
-    /// <returns>A task that completes when migrations have been applied.</returns>
     public static async Task InitializeFixturesDatabaseAsync(this IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
@@ -98,8 +108,6 @@ public static class DependencyInjection
         {
             var dbContext = services.GetRequiredService<FixturesDbContext>();
             await dbContext.Database.MigrateAsync();
-
-            // todo: add database seeder
         }
         catch (Exception ex)
         {

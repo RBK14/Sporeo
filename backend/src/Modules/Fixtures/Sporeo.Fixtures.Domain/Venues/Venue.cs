@@ -105,7 +105,8 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
             providerId,
             false);
 
-        venue.AddDomainEvent(new VenueCreatedDomainEvent(venue.Id.Value));
+        if (coordinates is null)
+            venue.AddDomainEvent(new VenueCreatedDomainEvent(venue.Id.Value));
 
         return venue;
     }
@@ -135,7 +136,8 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
             null,
             true);
 
-        venue.AddDomainEvent(new VenueCreatedDomainEvent(venue.Id.Value));
+        if (coordinates is null)
+            venue.AddDomainEvent(new VenueCreatedDomainEvent(venue.Id.Value));
 
         return venue;
     }

@@ -1,16 +1,16 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+<Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure.Integration\Sporeo.Fixtures.Infrastructure.Integration.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure.Persistence\Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure.Messaging\Sporeo.BuildingBlocks.Infrastructure.Messaging.csproj" />
     <ProjectReference Include="..\..\..\Platform\Sporeo.ServiceDefaults\Sporeo.ServiceDefaults.csproj" />
   </ItemGroup>
 

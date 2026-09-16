@@ -121,7 +121,7 @@ public static class Errors
             /// <summary>
             /// Returned when a provided city value is empty or whitespace.
             /// </summary>
-            public static readonly Error EmptyCity = new("Venue.Address.EmptyCity", "City cannot be empty.");
+            public static readonly Error EmptyCity = new("Venue.Address.EmptyCity", "City cannot be empty or whitespace when provided.");
 
             /// <summary>
             /// Returned when a provided country value is empty or whitespace.

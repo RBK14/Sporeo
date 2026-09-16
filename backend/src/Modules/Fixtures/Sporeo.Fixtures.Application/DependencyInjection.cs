@@ -1,8 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
-using Sporeo.BuildingBlocks.Application.Abstractions.Messaging;
 using Sporeo.BuildingBlocks.Application.Behaviors;
-using Sporeo.Fixtures.Domain.Venues.Events;
 
 namespace Sporeo.Fixtures.Application;
 
@@ -12,22 +10,12 @@ namespace Sporeo.Fixtures.Application;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Durable outbox type key for <see cref="VenueCreatedDomainEvent"/>.
-    /// </summary>
-    public const string VenueCreatedDomainEventTypeKey = "Sporeo.Fixtures.VenueCreatedDomainEvent.v1";
-
-    /// <summary>
     /// Adds MediatR handlers from this assembly and the shared BuildingBlocks pipeline behaviors.
     /// </summary>
     /// <param name="services">The service collection to configure.</param>
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddSingleton<IDomainEventTypeRegistry>(_ => new DomainEventTypeRegistry(
-        [
-            new KeyValuePair<string, Type>(VenueCreatedDomainEventTypeKey, typeof(VenueCreatedDomainEvent))
-        ]));
-
         services.AddMediatR(configuration =>
         {
             configuration.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);

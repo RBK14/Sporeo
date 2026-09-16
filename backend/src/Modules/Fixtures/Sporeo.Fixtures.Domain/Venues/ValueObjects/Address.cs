@@ -5,7 +5,7 @@ using Sporeo.Fixtures.Domain.Common;
 namespace Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 /// <summary>
-/// Represents a venue postal address composed of an optional street and required city and country.
+/// Represents a venue postal address composed of an optional street, optional city, and required country.
 /// </summary>
 public sealed class Address : ValueObject
 {
@@ -15,16 +15,16 @@ public sealed class Address : ValueObject
     public string? Street { get; }
 
     /// <summary>
-    /// Gets the city name.
+    /// Gets the city name, if specified.
     /// </summary>
-    public string City { get; }
+    public string? City { get; }
 
     /// <summary>
     /// Gets the country name.
     /// </summary>
     public string Country { get; }
 
-    private Address(string? street, string city, string country)
+    private Address(string? street, string? city, string country)
     {
         Street = street;
         City = city;
@@ -35,15 +35,15 @@ public sealed class Address : ValueObject
     /// Creates a validated <see cref="Address"/> from the specified components.
     /// </summary>
     /// <param name="street">The street name and number, or <see langword="null"/> when not provided.</param>
-    /// <param name="city">The city name.</param>
+    /// <param name="city">The city name, or <see langword="null"/> when not provided.</param>
     /// <param name="country">The country name.</param>
     /// <returns>A successful result containing the address, or a failure when a provided component is empty or whitespace.</returns>
-    public static Result<Address> Create(string? street, string city, string country)
+    public static Result<Address> Create(string? street, string? city, string country)
     {
         if (street is not null && string.IsNullOrWhiteSpace(street))
             return Result.Failure<Address>(Errors.Venue.Address.EmptyStreet);
 
-        if (string.IsNullOrWhiteSpace(city))
+        if (city is not null && string.IsNullOrWhiteSpace(city))
             return Result.Failure<Address>(Errors.Venue.Address.EmptyCity);
 
         if (string.IsNullOrWhiteSpace(country))

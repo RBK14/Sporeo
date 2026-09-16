@@ -1,8 +1,9 @@
 using FluentAssertions;
-using Sporeo.BuildingBlocks.Application.Abstractions.Messaging;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
 using Sporeo.BuildingBlocks.Domain.Time;
-using Sporeo.BuildingBlocks.Infrastructure.Outbox;
-using Sporeo.Fixtures.Application;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models;
+using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
 using Sporeo.Fixtures.Domain.Venues.Events;
 
 namespace Sporeo.Fixtures.Application.Tests.Messaging;
@@ -15,14 +16,14 @@ public sealed class DomainEventTypeRegistryTests
         var registry = new DomainEventTypeRegistry(
         [
             new KeyValuePair<string, Type>(
-                DependencyInjection.VenueCreatedDomainEventTypeKey,
+                FixturesOutboxTypeKeys.VenueCreatedDomainEvent,
                 typeof(VenueCreatedDomainEvent))
         ]);
 
         var domainEvent = new VenueCreatedDomainEvent(Guid.NewGuid());
 
-        registry.GetTypeKey(domainEvent).Should().Be(DependencyInjection.VenueCreatedDomainEventTypeKey);
-        registry.TryResolve(DependencyInjection.VenueCreatedDomainEventTypeKey, out var type).Should().BeTrue();
+        registry.GetTypeKey(domainEvent).Should().Be(FixturesOutboxTypeKeys.VenueCreatedDomainEvent);
+        registry.TryResolve(FixturesOutboxTypeKeys.VenueCreatedDomainEvent, out var type).Should().BeTrue();
         type.Should().Be(typeof(VenueCreatedDomainEvent));
     }
 

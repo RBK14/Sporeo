@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
-using Sporeo.Fixtures.Infrastructure.Persistence.Data;
+using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 
 #nullable disable
 
@@ -249,7 +249,7 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                     b.ToTable("sports", (string)null);
                 });
 
-            modelBuilder.Entity("Sporeo.BuildingBlocks.Infrastructure.Outbox.OutboxMessage", b =>
+            modelBuilder.Entity("Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");

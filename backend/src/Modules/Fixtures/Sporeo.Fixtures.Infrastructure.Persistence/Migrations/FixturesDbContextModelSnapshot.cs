@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
-using Sporeo.Fixtures.Infrastructure.Persistence.Data;
+using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 
 #nullable disable
 
@@ -22,6 +22,50 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset?>("NextAttempt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("OccurredOn")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ProcessedOn")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "NextAttempt", "OccurredOn")
+                        .HasDatabaseName("IX_OutboxMessages_Pending");
+
+                    b.ToTable("outbox-messages", (string)null);
+                });
 
             modelBuilder.Entity("Sporeo.Fixtures.Domain.Fixtures.Fixture", b =>
                 {
@@ -246,49 +290,6 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                     b.ToTable("sports", (string)null);
                 });
 
-            modelBuilder.Entity("Sporeo.BuildingBlocks.Infrastructure.Outbox.OutboxMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Error")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTimeOffset?>("NextAttempt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset>("OccurredOn")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("ProcessedOn")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int>("RetryCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Status", "NextAttempt", "OccurredOn")
-                        .HasDatabaseName("IX_OutboxMessages_Pending");
-
-                    b.ToTable("OutboxMessages", (string)null);
-                });
-
             modelBuilder.Entity("Sporeo.Fixtures.Domain.Venues.Venue", b =>
                 {
                     b.Property<Guid>("Id")
@@ -333,6 +334,47 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                         .HasFilter("[ExternalProviderName] IS NOT NULL AND [ExternalProviderId] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.ToTable("venues", (string)null);
+                });
+
+            modelBuilder.Entity("Sporeo.Fixtures.Infrastructure.Persistence.Geocoding.GeocodingCacheEntry", b =>
+                {
+                    b.Property<string>("NormalizedAddress")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTimeOffset>("CachedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsFound")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<string>("Street")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("NormalizedAddress");
+
+                    b.HasIndex("ExpiresAtUtc")
+                        .HasDatabaseName("IX_GeocodingCacheEntries_ExpiresAtUtc");
+
+                    b.ToTable("geocoding-cache-entries", (string)null);
                 });
 
             modelBuilder.Entity("Sporeo.Fixtures.Domain.Fixtures.Fixture", b =>
@@ -385,7 +427,6 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                                 .HasColumnType("uniqueidentifier");
 
                             b1.Property<string>("City")
-                                .IsRequired()
                                 .HasMaxLength(100)
                                 .HasColumnType("nvarchar(100)")
                                 .HasColumnName("City");
