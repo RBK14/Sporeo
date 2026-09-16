@@ -26,5 +26,6 @@
     <Project Path="tests/Sporeo.Fixtures.Domain.Tests/Sporeo.Fixtures.Domain.Tests.csproj" />
     <Project Path="tests/Sporeo.Fixtures.Infrastructure.Integration.Tests/Sporeo.Fixtures.Infrastructure.Integration.Tests.csproj" />
     <Project Path="tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests/Sporeo.Fixtures.Infrastructure.Persistence.Tests.csproj" />
+    <Project Path="tests/Sporeo.Fixtures.Worker.Tests/Sporeo.Fixtures.Worker.Tests.csproj" />
   </Folder>
 </Solution>
