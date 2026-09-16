@@ -2,12 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Sporeo.Fixtures.Application.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
-using Sporeo.Fixtures.Infrastructure.Persistence.Data;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Data.Repositories;
 
 internal sealed class FixtureRepository(FixturesDbContext dbContext) : IFixtureRepository
 {
+    private const int ProviderIdChunkSize = 500;
+
     public Task<Fixture?> GetByIdAsync(FixtureId id, CancellationToken cancellationToken = default) =>
         dbContext.Fixtures.SingleOrDefaultAsync(fixture => fixture.Id == id, cancellationToken);
 
@@ -25,15 +26,24 @@ internal sealed class FixtureRepository(FixturesDbContext dbContext) : IFixtureR
         IEnumerable<string> providerIds,
         CancellationToken cancellationToken = default)
     {
-        var ids = providerIds as ICollection<string> ?? providerIds.ToList();
+        var ids = providerIds as IList<string> ?? providerIds.ToList();
         if (ids.Count == 0)
             return [];
 
-        return await dbContext.Fixtures
-            .Where(fixture => fixture.ExternalProviderName == providerName
-                && fixture.ExternalProviderId != null
-                && ids.Contains(fixture.ExternalProviderId))
-            .ToListAsync(cancellationToken);
+        var results = new List<Fixture>();
+        foreach (var chunk in ids.Chunk(ProviderIdChunkSize))
+        {
+            var chunkIds = chunk.ToArray();
+            var fixtures = await dbContext.Fixtures
+                .Where(fixture => fixture.ExternalProviderName == providerName
+                    && fixture.ExternalProviderId != null
+                    && chunkIds.Contains(fixture.ExternalProviderId))
+                .ToListAsync(cancellationToken);
+
+            results.AddRange(fixtures);
+        }
+
+        return results;
     }
 
     public void Add(Fixture fixture) => dbContext.Fixtures.Add(fixture);

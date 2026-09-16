@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Sporeo.Fixtures.Domain\Sporeo.Fixtures.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sporeo.Fixtures.Application.Tests" />
+  </ItemGroup>
+
 </Project>
