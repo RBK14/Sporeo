@@ -1,16 +1,22 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
-using Sporeo.BuildingBlocks.Infrastructure.Persistence;
-using Sporeo.Fixtures.Application.Abstractions.ReadModel;
-using Sporeo.Fixtures.Application.Abstractions.Repositories;
+using Sporeo.BuildingBlocks.Infrastructure.Persistence.Interceptors;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Venues.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
+using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
 using Sporeo.Fixtures.Infrastructure.Persistence.Data;
-using Sporeo.Fixtures.Infrastructure.Persistence.Data.ReadModel;
-using Sporeo.Fixtures.Infrastructure.Persistence.Data.Repositories;
-using Sporeo.Fixtures.Infrastructure.Persistence.Extensions;
+using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
+using Sporeo.Fixtures.Infrastructure.Persistence.ReadModels;
+using Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence;
 

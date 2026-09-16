@@ -1,7 +1,7 @@
-﻿using Sporeo.BuildingBlocks.Application.Abstractions.Data;
+using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Sports;
 
 namespace Sporeo.Fixtures.Application.Sports.Commands.CreateSport;
