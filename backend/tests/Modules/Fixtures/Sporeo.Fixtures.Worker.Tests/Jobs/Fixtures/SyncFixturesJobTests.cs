@@ -3,10 +3,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Quartz;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Abstractions.Providers;
-using Sporeo.Fixtures.Application.Fixtures.Commands;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
-using Sporeo.Fixtures.Worker.Jobs;
+using Sporeo.Fixtures.Worker.Jobs.Fixtures;
 using MediatR;
 
 namespace Sporeo.Fixtures.Worker.Tests.Jobs;
@@ -14,9 +14,9 @@ namespace Sporeo.Fixtures.Worker.Tests.Jobs;
 public sealed class SyncFixturesJobTests
 {
     [Fact]
-    public async Task Execute_WithLargeFetch_ShouldSendChunkedCommands()
+    public async Task Execute_WithLargeFetch_ShouldSendSingleBatchCommand()
     {
-        var fixtures = Enumerable.Range(1, SyncFixturesBatchCommand.MaxBatchSize + 25)
+        var fixtures = Enumerable.Range(1, SyncFixturesBatchCommand.ChunkSize + 25)
             .Select(index => new ExternalFixtureDto(
                 index.ToString(),
                 "TheSportsDB",
@@ -37,19 +37,15 @@ public sealed class SyncFixturesJobTests
 
         var sender = Substitute.For<ISender>();
         sender.Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success(new SyncFixturesBatchReport(1, 0, 0, 0)));
+            .Returns(Result.Success(SyncBatchResultDto.Create(fixtures.Count, 0, 0, 0)));
 
         var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
         var context = CreateContext();
 
         await job.Execute(context, CancellationToken.None);
 
-        await sender.Received(2).Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>());
         await sender.Received(1).Send(
-            Arg.Is<SyncFixturesBatchCommand>(command => command.Fixtures.Count == SyncFixturesBatchCommand.MaxBatchSize),
-            Arg.Any<CancellationToken>());
-        await sender.Received(1).Send(
-            Arg.Is<SyncFixturesBatchCommand>(command => command.Fixtures.Count == 25),
+            Arg.Is<SyncFixturesBatchCommand>(command => command.Fixtures.Count == fixtures.Count),
             Arg.Any<CancellationToken>());
     }
 
@@ -76,7 +72,7 @@ public sealed class SyncFixturesJobTests
     }
 
     [Fact]
-    public async Task Execute_WhenBatchHasPartialFailures_ShouldThrowJobExecutionException()
+    public async Task Execute_WhenBatchHasPartialSuccess_ShouldCompleteWithoutThrowing()
     {
         var fixtures = new List<ExternalFixtureDto>
         {
@@ -94,14 +90,55 @@ public sealed class SyncFixturesJobTests
 
         var sender = Substitute.For<ISender>();
         sender.Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success(new SyncFixturesBatchReport(1, 0, 0, Failed: 1)));
+            .Returns(Result.Success(SyncBatchResultDto.Create(1, 0, 0, failed: 1)));
 
         var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
 
         var act = async () => await job.Execute(CreateContext(), CancellationToken.None);
 
-        await act.Should().ThrowAsync<JobExecutionException>()
-            .Where(ex => ex.RefireImmediately == false);
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task Execute_WhenFetchReturnsEmptyList_ShouldCompleteWithoutSendingBatch()
+    {
+        var client = Substitute.For<IExternalFixturesClient>();
+        client.ProviderName.Returns("TheSportsDB");
+        client.FetchFixturesAsync(
+                Arg.Any<string>(),
+                Arg.Any<string?>(),
+                Arg.Any<SyncMode>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Result.Success<IReadOnlyList<ExternalFixtureDto>>([]));
+
+        var sender = Substitute.For<ISender>();
+        var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
+
+        await job.Execute(CreateContext(), CancellationToken.None);
+
+        await sender.DidNotReceive().Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Execute_WhenFetchReturnsInvalidPayload_ShouldThrowJobExecutionException()
+    {
+        var client = Substitute.For<IExternalFixturesClient>();
+        client.ProviderName.Returns("TheSportsDB");
+        client.FetchFixturesAsync(
+                Arg.Any<string>(),
+                Arg.Any<string?>(),
+                Arg.Any<SyncMode>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
+                new Error("ExternalFixtures.InvalidPayload", "Provider returned an invalid payload.")));
+
+        var sender = Substitute.For<ISender>();
+        var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
+
+        var act = async () => await job.Execute(CreateContext(), CancellationToken.None);
+
+        await act.Should().ThrowAsync<JobExecutionException>();
+        await sender.DidNotReceive().Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>());
     }
 
     private static IJobExecutionContext CreateContext()

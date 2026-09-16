@@ -1,11 +1,11 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
+using Sporeo.Fixtures.Infrastructure.Integration.Observability;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 
@@ -30,6 +30,9 @@ internal sealed class TheSportsDbClient(
     private static readonly Error Transient = new("ExternalFixtures.Transient", "Provider returned a transient failure.");
     private static readonly Error Permanent = new("ExternalFixtures.Permanent", "Provider returned a permanent failure.");
     private static readonly Error InvalidPayload = new("ExternalFixtures.InvalidPayload", "Provider returned an invalid payload.");
+
+    private const string DropReasonMissingId = "missing_id";
+    private const string DropReasonInvalidDate = "invalid_date";
 
     /// <inheritdoc />
     public string ProviderName => "TheSportsDB";
@@ -136,6 +139,7 @@ internal sealed class TheSportsDbClient(
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var data = await JsonSerializer.DeserializeAsync<TheSportsDbResponse>(stream, JsonOptions, cancellationToken);
 
+            // Empty provider responses are treated as a successful no-op — never as a signal to clear local data.
             if (data?.Events is null || data.Events.Length == 0)
                 return Result.Success<IReadOnlyList<ExternalFixtureDto>>([]);
 
@@ -144,23 +148,38 @@ internal sealed class TheSportsDbClient(
 
             foreach (var apiEvent in data.Events)
             {
-                var dto = MapToDto(apiEvent);
-                if (dto is null)
+                var mapResult = MapToDto(apiEvent, relativePath);
+                if (mapResult.Dto is null)
                 {
                     dropped++;
+                    FixturesIntegrationMetrics.EventsDropped.Add(
+                        1,
+                        new KeyValuePair<string, object?>("provider", ProviderName),
+                        new KeyValuePair<string, object?>("reason", mapResult.DropReason ?? "unknown"));
+
+                    logger.LogWarning(
+                        "Dropped TheSportsDb event {EventId} for {Path}: {DropReason}",
+                        apiEvent.IdEvent ?? "(null)",
+                        relativePath,
+                        mapResult.DropReason);
                     continue;
                 }
 
-                mapped.Add(dto);
+                mapped.Add(mapResult.Dto);
             }
 
             if (dropped > 0)
             {
                 logger.LogWarning(
-                    "Dropped {DroppedCount} TheSportsDb events for {Path} due to invalid mapping.",
+                    "Dropped {DroppedCount} of {TotalCount} TheSportsDb events for {Path} due to invalid mapping.",
                     dropped,
+                    data.Events.Length,
                     relativePath);
             }
+
+            // All events present but every one failed validation/parsing — surface as InvalidPayload.
+            if (mapped.Count == 0)
+                return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(InvalidPayload);
 
             return Result.Success<IReadOnlyList<ExternalFixtureDto>>(mapped);
         }
@@ -170,61 +189,119 @@ internal sealed class TheSportsDbClient(
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "Transient HTTP failure while fetching {Path}.", relativePath);
+            logger.LogError(
+                "Transient HTTP failure while fetching {Path}: {ExceptionType}.",
+                relativePath,
+                ex.GetType().Name);
             return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Transient);
         }
         catch (JsonException ex)
         {
-            logger.LogError(ex, "Invalid JSON payload while fetching {Path}.", relativePath);
+            logger.LogError(
+                "Invalid JSON payload while fetching {Path}: {ExceptionType}.",
+                relativePath,
+                ex.GetType().Name);
             return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(InvalidPayload);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Unexpected error while fetching {Path}.", relativePath);
+            logger.LogError(
+                "Unexpected error while fetching {Path}: {ExceptionType}.",
+                relativePath,
+                ex.GetType().Name);
             return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Permanent);
         }
     }
 
-    private ExternalFixtureDto? MapToDto(TheSportsDbEvent apiEvent)
+    private MapResult MapToDto(TheSportsDbEvent apiEvent, string relativePath)
     {
-        if (string.IsNullOrWhiteSpace(apiEvent.IdEvent) ||
-            string.IsNullOrWhiteSpace(apiEvent.DateEvent) ||
-            string.IsNullOrWhiteSpace(apiEvent.StrTime))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(apiEvent.IdEvent))
+            return MapResult.Dropped(DropReasonMissingId);
 
-        if (!TryParseStartDate(apiEvent.DateEvent, apiEvent.StrTime, out var startDate))
-            return null;
+        if (!TryParseStartDate(apiEvent.StrTimestamp, apiEvent.DateEvent, apiEvent.StrTime, out var startDate))
+            return MapResult.Dropped(DropReasonInvalidDate);
 
         ExternalFixtureVenueDto? venueDto = null;
-        if (!string.IsNullOrWhiteSpace(apiEvent.IdVenue) && !string.IsNullOrWhiteSpace(apiEvent.StrVenue))
+        if (!string.IsNullOrWhiteSpace(apiEvent.StrVenue))
         {
+            var venueProviderId = string.IsNullOrWhiteSpace(apiEvent.IdVenue)
+                ? $"fallback-{apiEvent.StrVenue.Trim().Replace(" ", "-").ToLowerInvariant()}"
+                : apiEvent.IdVenue;
+
+            var country = string.IsNullOrWhiteSpace(apiEvent.StrCountry) ? null : apiEvent.StrCountry.Trim();
+
             venueDto = new ExternalFixtureVenueDto(
-                ProviderId: apiEvent.IdVenue,
+                ProviderId: venueProviderId,
                 ProviderName: ProviderName,
                 Name: apiEvent.StrVenue,
                 Street: null,
                 City: null,
-                Country: null,
+                Country: country,
                 Latitude: null,
                 Longitude: null);
         }
 
-        return new ExternalFixtureDto(
+        return MapResult.Mapped(new ExternalFixtureDto(
             ProviderId: apiEvent.IdEvent,
             ProviderName: ProviderName,
             Name: string.IsNullOrWhiteSpace(apiEvent.StrEvent) ? "Unknown Match" : apiEvent.StrEvent,
             StartDate: startDate,
-            Status: MapFixtureStatus(apiEvent.StrStatus),
-            Venue: venueDto);
+            Status: MapFixtureStatus(apiEvent.StrStatus, apiEvent.IdEvent, relativePath),
+            Venue: venueDto));
     }
 
-    private static bool TryParseStartDate(string dateEvent, string strTime, out DateTimeOffset startDate)
+    /// <summary>
+    /// Parses fixture start time preferring <paramref name="strTimestamp"/>, falling back to
+    /// <paramref name="dateEvent"/> + <paramref name="strTime"/>. Results are normalized to UTC.
+    /// </summary>
+    private static bool TryParseStartDate(
+        string? strTimestamp,
+        string? dateEvent,
+        string? strTime,
+        out DateTimeOffset startDate)
     {
-        var raw = $"{dateEvent} {strTime}";
+        if (!string.IsNullOrWhiteSpace(strTimestamp) &&
+            TryParseAsUtc(strTimestamp.Trim(), out startDate))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dateEvent) &&
+            !string.IsNullOrWhiteSpace(strTime))
+        {
+            var raw = $"{dateEvent.Trim()} {strTime.Trim()}";
+            if (TryParseAsUtc(raw, out startDate))
+                return true;
+        }
+
+        startDate = default;
+        return false;
+    }
+
+    private static bool TryParseAsUtc(string value, out DateTimeOffset startDate)
+    {
         if (DateTimeOffset.TryParse(
-                raw,
+                value,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out startDate))
+        {
+            return true;
+        }
+
+        // Exact common TheSportsDB formats when culture-aware parse fails.
+        string[] formats =
+        [
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm:ssK",
+            "yyyy-MM-dd'T'HH:mm:ss.FFFFFFFK",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm"
+        ];
+
+        if (DateTimeOffset.TryParseExact(
+                value,
+                formats,
                 CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
                 out startDate))
@@ -236,15 +313,38 @@ internal sealed class TheSportsDbClient(
         return false;
     }
 
-    private static FixtureStatus MapFixtureStatus(string? apiStatus) =>
-        apiStatus switch
+    private FixtureStatus MapFixtureStatus(string? apiStatus, string eventId, string relativePath)
+    {
+        switch (apiStatus)
         {
-            "Match Finished" => FixtureStatus.Finished,
-            "Not Started" => FixtureStatus.Scheduled,
-            "Postponed" => FixtureStatus.Postponed,
-            "Cancelled" => FixtureStatus.Cancelled,
-            _ => FixtureStatus.Scheduled
-        };
+            case "Match Finished":
+                return FixtureStatus.Finished;
+            case "Not Started":
+                return FixtureStatus.Scheduled;
+            case "Postponed":
+                return FixtureStatus.Postponed;
+            case "Cancelled":
+                return FixtureStatus.Cancelled;
+            default:
+                FixturesIntegrationMetrics.UnknownStatuses.Add(
+                    1,
+                    new KeyValuePair<string, object?>("provider", ProviderName));
+
+                logger.LogWarning(
+                    "Unknown TheSportsDb status '{ApiStatus}' for event {EventId} on {Path}; defaulting to Scheduled.",
+                    apiStatus ?? "(null)",
+                    eventId,
+                    relativePath);
+
+                return FixtureStatus.Scheduled;
+        }
+    }
+
+    private readonly record struct MapResult(ExternalFixtureDto? Dto, string? DropReason)
+    {
+        public static MapResult Mapped(ExternalFixtureDto dto) => new(dto, null);
+        public static MapResult Dropped(string reason) => new(null, reason);
+    }
 }
 
 /// <summary>

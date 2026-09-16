@@ -1,6 +1,8 @@
+using Microsoft.Extensions.Options;
 using Quartz;
 using Sporeo.Fixtures.Worker.Configuration;
-using Sporeo.Fixtures.Worker.Jobs;
+using Sporeo.Fixtures.Worker.Jobs.Fixtures;
+using Sporeo.Fixtures.Worker.Jobs.Outbox;
 
 namespace Sporeo.Fixtures.Worker;
 
@@ -20,6 +22,8 @@ public static class DependencyInjection
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddWorkerConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<IValidateOptions<SyncJobsRootOptions>, SyncJobsRootOptionsValidator>();
+
         services.AddOptions<SyncJobsRootOptions>()
             .Bind(configuration.GetSection(SyncJobsRootOptions.SectionName))
             .ValidateDataAnnotations()

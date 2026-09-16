@@ -7,6 +7,7 @@ using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence.Interceptors;
+using Sporeo.Fixtures.Application.Abstractions.Persistence;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
@@ -18,6 +19,7 @@ using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Venues.Events;
 using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
 using Sporeo.Fixtures.Infrastructure.Persistence.Context;
+using Sporeo.Fixtures.Infrastructure.Persistence.Exceptions;
 using Sporeo.Fixtures.Infrastructure.Persistence.Geocoding;
 using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
@@ -35,10 +37,14 @@ public static class DependencyInjection
     /// <summary>
     /// Adds the Fixtures EF Core persistence layer to the service collection.
     /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="configuration">The application configuration containing the connection string.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<AuditableEntityInterceptor>();
         services.AddSingleton<VenueLocationInterceptor>();
+        services.AddSingleton<IDatabaseExceptionClassifier, SqlServerDatabaseExceptionClassifier>();
         services.AddSingleton<IDomainEventTypeRegistry>(_ => new DomainEventTypeRegistry(
         [
             new KeyValuePair<string, Type>(
@@ -99,6 +105,8 @@ public static class DependencyInjection
     /// <summary>
     /// Applies pending EF Core migrations for the Fixtures database.
     /// </summary>
+    /// <param name="serviceProvider">The root service provider.</param>
+    /// <returns>A task that completes when migrations have been applied.</returns>
     public static async Task InitializeFixturesDatabaseAsync(this IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
@@ -108,7 +116,8 @@ public static class DependencyInjection
         {
             var dbContext = services.GetRequiredService<FixturesDbContext>();
             await dbContext.Database.MigrateAsync();
-        }
+
+            }
         catch (Exception ex)
         {
             var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitialization");

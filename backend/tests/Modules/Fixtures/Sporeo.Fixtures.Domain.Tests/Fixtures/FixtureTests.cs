@@ -97,6 +97,52 @@ public class FixtureTests
     }
 
     [Fact]
+    public void SyncFromProvider_WhenStatusTransitionInvalid_ShouldNotMutateFields()
+    {
+        var fixture = CreateProviderFixture();
+        fixture.ChangeStatus(FixtureStatus.Cancelled).IsSuccess.Should().BeTrue();
+        var originalName = fixture.Name;
+        var originalStart = fixture.StartDate;
+
+        var result = fixture.SyncFromProvider(
+            SportId,
+            LeagueId,
+            SeasonId,
+            "Updated Name",
+            StartDate.AddDays(5),
+            FixtureStatus.Scheduled,
+            VenueId);
+
+        result.IsFailure.Should().BeTrue();
+        fixture.Name.Should().Be(originalName);
+        fixture.StartDate.Should().Be(originalStart);
+        fixture.Status.Should().Be(FixtureStatus.Cancelled);
+        fixture.VenueId.Should().BeNull();
+    }
+
+    [Fact]
+    public void SyncFromProvider_ShouldUpdateCoreFieldsStatusAndVenueAtomically()
+    {
+        var fixture = CreateProviderFixture();
+        var seasonId = SeasonId.FromValue(Guid.Parse("44444444-4444-4444-4444-444444444444"));
+
+        var result = fixture.SyncFromProvider(
+            SportId,
+            LeagueId,
+            seasonId,
+            "Updated Fixture",
+            StartDate.AddDays(1),
+            FixtureStatus.Postponed,
+            VenueId);
+
+        result.IsSuccess.Should().BeTrue();
+        fixture.Name.Should().Be("Updated Fixture");
+        fixture.SeasonId.Should().Be(seasonId);
+        fixture.Status.Should().Be(FixtureStatus.Postponed);
+        fixture.VenueId.Should().Be(VenueId);
+    }
+
+    [Fact]
     public void UpdateManually_ShouldUpdateCoreFields()
     {
         var fixture = CreateProviderFixture();

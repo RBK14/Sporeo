@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using FluentAssertions;
-using Sporeo.Fixtures.Application.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using Sporeo.Fixtures.Worker.Configuration;
 
 namespace Sporeo.Fixtures.Worker.Tests.Configuration;

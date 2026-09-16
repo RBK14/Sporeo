@@ -1,4 +1,4 @@
-﻿using Sporeo.Fixtures.Application.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using System.ComponentModel.DataAnnotations;
 using Quartz;
 

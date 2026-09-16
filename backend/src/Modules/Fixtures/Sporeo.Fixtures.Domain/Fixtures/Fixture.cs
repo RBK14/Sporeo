@@ -205,6 +205,30 @@ public sealed class Fixture : AggregateRoot<FixtureId>, IAuditable, IDeletable
         string name,
         DateTimeOffset startDate)
     {
+        return SyncFromProvider(sportId, leagueId, seasonId, name, startDate, Status, VenueId);
+    }
+
+    /// <summary>
+    /// Atomically applies a full external provider snapshot (core fields, status, and optional venue).
+    /// All domain rules are evaluated before any state is mutated.
+    /// </summary>
+    /// <param name="sportId">The sport to which the fixture belongs.</param>
+    /// <param name="leagueId">The league to which the fixture belongs, if known.</param>
+    /// <param name="seasonId">The season to which the fixture belongs, if known.</param>
+    /// <param name="name">The display name of the fixture.</param>
+    /// <param name="startDate">The scheduled start date and time.</param>
+    /// <param name="status">The lifecycle status reported by the provider.</param>
+    /// <param name="venueId">The venue to assign, or <see langword="null"/> to leave the current assignment unchanged.</param>
+    /// <returns>A successful result when synchronization succeeds; otherwise a failure without partial mutation.</returns>
+    public Result SyncFromProvider(
+        SportId sportId,
+        LeagueId? leagueId,
+        SeasonId? seasonId,
+        string name,
+        DateTimeOffset startDate,
+        FixtureStatus status,
+        VenueId? venueId)
+    {
         var guard = EnsureModifiable();
         if (guard.IsFailure)
             return guard;
@@ -217,7 +241,20 @@ public sealed class Fixture : AggregateRoot<FixtureId>, IAuditable, IDeletable
         if (nameValidation.IsFailure)
             return nameValidation;
 
+        if (Status != status)
+        {
+            var statusGuard = CheckRules(
+                new FinishedFixtureIsImmutableRule(this),
+                new InvalidFixtureStatusTransitionRule(Status, status));
+            if (statusGuard.IsFailure)
+                return statusGuard;
+        }
+
         UpdateCoreFields(sportId, leagueId, seasonId, name, startDate);
+        Status = status;
+
+        if (venueId is not null)
+            VenueId = venueId;
 
         return Result.Success();
     }
