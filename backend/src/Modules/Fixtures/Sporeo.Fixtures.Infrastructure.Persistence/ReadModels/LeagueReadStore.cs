@@ -20,7 +20,8 @@ internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactor
         const string sql = """
             SELECT 
                 l.ExternalProviderId,
-                l.Id
+                l.Id,
+                l.IsMonitored
             FROM Leagues l
             WHERE ExternalProviderName = @ProviderName 
               AND ExternalProviderId IN @ProviderIds
@@ -38,5 +39,5 @@ internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactor
             x => (LeagueId.FromValue(x.Id), x.IsMonitored));
     }
 
-    private record LeagueStatusDto(string ExternalProviderId, Guid Id, bool IsMonitored);
 }
+internal sealed record LeagueStatusDto(string ExternalProviderId, Guid Id, bool IsMonitored);

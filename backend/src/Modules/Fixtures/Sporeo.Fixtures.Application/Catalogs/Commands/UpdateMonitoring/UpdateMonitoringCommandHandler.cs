@@ -24,8 +24,13 @@ internal sealed class UpdateMonitoringCommandHandler(
         if (cachedSports.Count == 0 || cachedLeagues.Count == 0)
             return Result.Failure(new Error("Catalog.CacheExpired", "Catalog data expired. Please refresh the page."));
 
-        var cachedSportsDict = cachedSports.ToDictionary(s => s.ProviderId);
-        var cachedLeaguesDict = cachedLeagues.ToDictionary(l => l.ProviderId);
+        var cachedSportsDict = cachedSports
+            .DistinctBy(s => s.ProviderId)
+            .ToDictionary(s => s.ProviderId);
+
+        var cachedLeaguesDict = cachedLeagues
+            .DistinctBy(s => s.ProviderId)
+            .ToDictionary(l => l.ProviderId);
 
         var incomingSportIds = request.Sports.Select(s => s.ProviderId).ToList();
         var incomingLeagueIds = request.Sports.SelectMany(s => s.Leagues.Select(l => l.ProviderId)).ToList();

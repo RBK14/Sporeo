@@ -20,7 +20,6 @@ internal sealed class NominatimGeocodingService(
     ICacheService cacheService,
     IGeocodingRateLimiter rateLimiter,
     IOptions<NominatimOptions> options,
-    TimeProvider timeProvider,
     ILogger<NominatimGeocodingService> logger) : IGeocodingService
 {
     private const string CacheKeyPrefix = "geocoding:";

@@ -11,6 +11,7 @@ using Sporeo.BuildingBlocks.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Application.Abstractions.Persistence;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
@@ -122,6 +123,7 @@ public static class DependencyInjection
         services.AddScoped<ISportRepository, SportRepository>();
         services.AddScoped<IFixtureReadStore, FixtureReadStore>();
         services.AddScoped<IVenueReadStore, VenueReadStore>();
+        services.AddScoped<ILeagueReadStore, LeagueReadStore>();
 
         return services;
     }
