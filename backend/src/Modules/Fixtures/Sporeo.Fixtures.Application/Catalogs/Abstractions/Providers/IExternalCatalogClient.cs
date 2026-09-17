@@ -1,7 +1,4 @@
 ﻿using Sporeo.BuildingBlocks.Domain.Results;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
 
@@ -18,10 +15,14 @@ public interface IExternalCatalogClient
     /// <summary>
     /// Fetches all available sports from the external provider.
     /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A successful result containing the sports list, or a failure when the provider call fails.</returns>
     Task<Result<IReadOnlyList<ExternalSportDto>>> FetchSportsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Fetches all available leagues from the external provider.
     /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A successful result containing the leagues list, or a failure when the provider call fails.</returns>
     Task<Result<IReadOnlyList<ExternalLeagueDto>>> FetchLeaguesAsync(CancellationToken cancellationToken = default);
 }

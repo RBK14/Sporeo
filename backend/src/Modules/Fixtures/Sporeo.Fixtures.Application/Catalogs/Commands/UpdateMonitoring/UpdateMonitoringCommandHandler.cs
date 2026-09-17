@@ -29,7 +29,7 @@ internal sealed class UpdateMonitoringCommandHandler(
         var incomingSportIds = request.Sports.Select(s => s.ProviderId).ToList();
         var incomingLeagueIds = request.Sports.SelectMany(s => s.Leagues.Select(l => l.ProviderId)).ToList();
 
-        // Assusming that the provider name is consistent across all sports and leagues in the request
+        // Assuming that the provider name is consistent across all sports and leagues in the request
         var providerName = request.Sports.FirstOrDefault()?.ProviderName;
 
         if (string.IsNullOrEmpty(providerName))

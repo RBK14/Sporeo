@@ -63,6 +63,13 @@ public static class DependencyInjection
         return services;
     }
 
+    /// <summary>
+    /// Adds Redis-backed distributed caching for the Fixtures module.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="configuration">The application configuration containing the <c>redis</c> connection string.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the <c>redis</c> connection string is missing.</exception>
     public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("redis")

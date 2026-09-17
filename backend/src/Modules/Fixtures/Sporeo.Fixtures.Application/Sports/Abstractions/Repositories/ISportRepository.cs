@@ -35,7 +35,7 @@ public interface ISportRepository
     /// <param name="providerName">The external provider name.</param>
     /// <param name="providerIds">The identifiers assigned by the external provider.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>The matching venues. Missing identifiers are omitted.</returns>
+    /// <returns>The matching sports. Missing identifiers are omitted.</returns>
     Task<IReadOnlyList<Sport>> GetByExternalProviderIdsAsync(
         string providerName,
         IEnumerable<string> providerIds,

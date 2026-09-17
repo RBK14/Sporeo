@@ -190,7 +190,7 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
     /// <summary>
     /// Changes the monitoring status of the league for synchronization.
     /// </summary>
-    /// <param name="isMonitored"></param>
+    /// <param name="isMonitored">Whether the league should be actively monitored for synchronization.</param>
     /// <returns>A successful result when the update succeeds; otherwise, a failure when the league cannot be modified.</returns>
     public Result ChangeMonitoringStatus(bool isMonitored)
     {

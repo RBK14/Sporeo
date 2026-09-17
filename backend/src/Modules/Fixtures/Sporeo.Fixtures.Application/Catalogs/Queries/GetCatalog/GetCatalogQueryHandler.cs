@@ -13,10 +13,10 @@ internal sealed class GetCatalogQueryHandler(
 {
     public async Task<Result<PagedResult<CatalogSportResponse>>> Handle(GetCatalogQuery request, CancellationToken cancellationToken)
     {
-        var cachedSports = await cacheService.GetAsync<List<ExternalSportDto>>(CatalogCacheKeys.SportsCacheKey, cancellationToken);
-        var cachedLeagues = await cacheService.GetAsync<List<ExternalLeagueDto>>(CatalogCacheKeys.LeaguesCacheKey, cancellationToken);
+        var cachedSports = await cacheService.GetAsync<List<ExternalSportDto>>(CatalogCacheKeys.SportsCacheKey, cancellationToken) ?? [];
+        var cachedLeagues = await cacheService.GetAsync<List<ExternalLeagueDto>>(CatalogCacheKeys.LeaguesCacheKey, cancellationToken) ?? [];
 
-        if (cachedSports is null || cachedLeagues is null)
+        if (cachedSports.Count == 0 || cachedLeagues.Count == 0)
         {
             var externalSports = await externalClient.FetchSportsAsync(cancellationToken);
             var externalLeagues = await externalClient.FetchLeaguesAsync(cancellationToken);
