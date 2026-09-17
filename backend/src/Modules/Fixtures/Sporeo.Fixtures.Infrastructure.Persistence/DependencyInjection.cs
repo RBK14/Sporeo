@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
@@ -17,6 +18,7 @@ using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Application.Venues.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Venues.Events;
+using Sporeo.Fixtures.Infrastructure.Persistence.Caching;
 using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
 using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 using Sporeo.Fixtures.Infrastructure.Persistence.Exceptions;
@@ -57,6 +59,22 @@ public static class DependencyInjection
         services.AddScoped<FixturesDatabaseSeeder>();
         services.AddSqlServer(configuration);
         services.AddRepositories();
+
+        return services;
+    }
+
+    public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("redis")
+            ?? throw new InvalidOperationException("Connection string 'redis' was not found.");
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = connectionString;
+            options.InstanceName = "fixtures-cache_";
+        });
+
+        services.AddSingleton<ICacheService, RedisCacheService>();
 
         return services;
     }

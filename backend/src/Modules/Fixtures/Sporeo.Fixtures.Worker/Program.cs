@@ -12,6 +12,7 @@ builder.AddServiceDefaults();
 builder.Services.AddWorkerConfiguration(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddPersistence(builder.Configuration);
+builder.Services.AddCaching(builder.Configuration);
 builder.Services.AddBuildingBlocksMessaging();
 builder.Services.AddIntegration(builder.Configuration);
 builder.Services.AddWorkerServices(builder.Configuration);

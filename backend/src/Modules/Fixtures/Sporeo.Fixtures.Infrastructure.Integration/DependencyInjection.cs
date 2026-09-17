@@ -13,6 +13,7 @@ using Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Threading.RateLimiting;
+using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration;
 
@@ -62,7 +63,7 @@ public static class DependencyInjection
 
         services.AddTransient<TheSportsDbApiKeyHandler>();
 
-        services.AddHttpClient<IExternalFixturesClient, TheSportsDbClient>((sp, client) =>
+        services.AddHttpClient<TheSportsDbClient>((sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<TheSportsDbOptions>>().Value;
                 var baseUrl = options.BaseUrl.TrimEnd('/') + "/";
@@ -107,6 +108,12 @@ public static class DependencyInjection
 
                 options.AttemptTimeout.Timeout = AttemptTimeout;
             });
+
+        // Resolve interfaces through the typed HttpClient registration so BaseAddress
+        // and TheSportsDbApiKeyHandler are applied. A plain AddTransient would inject
+        // an unconfigured HttpClient and fail on relative URIs with InvalidOperationException.
+        services.AddTransient<IExternalFixturesClient>(sp => sp.GetRequiredService<TheSportsDbClient>());
+        services.AddTransient<IExternalCatalogClient>(sp => sp.GetRequiredService<TheSportsDbClient>());
 
         return services;
     }
