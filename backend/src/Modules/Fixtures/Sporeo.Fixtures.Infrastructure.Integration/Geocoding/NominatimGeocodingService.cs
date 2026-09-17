@@ -1,12 +1,14 @@
-using System.Globalization;
-using System.Net;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
+using System.Globalization;
+using System.Net;
+using System.Text;
+using System.Text.Json;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
 
@@ -15,12 +17,14 @@ namespace Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
 /// </summary>
 internal sealed class NominatimGeocodingService(
     HttpClient httpClient,
-    IGeocodingCache geocodingCache,
+    ICacheService cacheService,
     IGeocodingRateLimiter rateLimiter,
     IOptions<NominatimOptions> options,
     TimeProvider timeProvider,
     ILogger<NominatimGeocodingService> logger) : IGeocodingService
 {
+    private const string CacheKeyPrefix = "geocoding:";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
@@ -45,9 +49,11 @@ internal sealed class NominatimGeocodingService(
         CancellationToken cancellationToken = default)
     {
         var sanitizedVenueName = SanitizeVenueName(venueName);
-        var normalizedAddress = GeocodingAddressNormalizer.Normalize(sanitizedVenueName, street, city, country);
+        var normalizedAddress = NormalizeAddress(sanitizedVenueName, street, city, country);
 
-        var cached = await geocodingCache.GetAsync(normalizedAddress, cancellationToken);
+        var cacheKey = $"{CacheKeyPrefix}{normalizedAddress}";
+
+        var cached = await cacheService.GetAsync<GeocodingCacheLookup>(cacheKey, cancellationToken);
         if (cached is not null)
         {
             if (!cached.IsFound || cached.Location is null)
@@ -80,9 +86,10 @@ internal sealed class NominatimGeocodingService(
 
             if (location is null)
             {
-                await geocodingCache.SetMissAsync(
-                    normalizedAddress,
-                    timeProvider.GetUtcNow().Add(options.Value.MissCacheTtl),
+                await cacheService.SetAsync(
+                    cacheKey,
+                    new GeocodingCacheLookup(false, null),
+                    options.Value.MissCacheTtl,
                     cancellationToken);
                 return Result.Failure<GeocodedLocation>(NotFound);
             }
@@ -112,10 +119,11 @@ internal sealed class NominatimGeocodingService(
             }
 
             var geocoded = new GeocodedLocation(coordinatesResult.Value, domainAddress);
-            await geocodingCache.SetFoundAsync(
-                normalizedAddress,
-                geocoded,
-                timeProvider.GetUtcNow().Add(options.Value.FoundCacheTtl),
+
+            await cacheService.SetAsync(
+                cacheKey,
+                new GeocodingCacheLookup(true, geocoded),
+                options.Value.FoundCacheTtl,
                 cancellationToken);
 
             return Result.Success(geocoded);
@@ -131,6 +139,10 @@ internal sealed class NominatimGeocodingService(
                 new Error("Geocoding.Exception", "An unexpected error occurred while processing the geocoding request."));
         }
     }
+
+    private sealed record GeocodingCacheLookup(
+        bool IsFound,
+        GeocodedLocation? Location);
 
     private static string SanitizeVenueName(string name)
     {
@@ -155,5 +167,42 @@ internal sealed class NominatimGeocodingService(
         }
 
         return sanitized;
+    }
+
+    private static string NormalizeAddress(
+        string venueName,
+        string? street,
+        string? city,
+        string? country)
+    {
+        var parts = new[] { venueName, street, city, country }
+            .Where(part => !string.IsNullOrWhiteSpace(part))
+            .Select(part => CollapseWhitespace(part!).ToLowerInvariant());
+
+        return string.Join(", ", parts);
+    }
+
+    private static string CollapseWhitespace(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        var previousWasWhitespace = false;
+
+        foreach (var character in value.Trim())
+        {
+            if (char.IsWhiteSpace(character))
+            {
+                if (previousWasWhitespace)
+                    continue;
+
+                builder.Append(' ');
+                previousWasWhitespace = true;
+                continue;
+            }
+
+            builder.Append(character);
+            previousWasWhitespace = false;
+        }
+
+        return builder.ToString();
     }
 }

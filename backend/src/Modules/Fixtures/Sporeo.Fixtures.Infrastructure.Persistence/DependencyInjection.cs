@@ -14,7 +14,6 @@ using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Application.Venues.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Venues.Events;
@@ -22,7 +21,6 @@ using Sporeo.Fixtures.Infrastructure.Persistence.Caching;
 using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
 using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 using Sporeo.Fixtures.Infrastructure.Persistence.Exceptions;
-using Sporeo.Fixtures.Infrastructure.Persistence.Geocoding;
 using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
 using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
@@ -55,7 +53,6 @@ public static class DependencyInjection
                 typeof(VenueCreatedDomainEvent))
         ]));
         services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
-        services.AddScoped<IGeocodingCache, EfCoreGeocodingCache>();
         services.AddScoped<FixturesDatabaseSeeder>();
         services.AddSqlServer(configuration);
         services.AddRepositories();
