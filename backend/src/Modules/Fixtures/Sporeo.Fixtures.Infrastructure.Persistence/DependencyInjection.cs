@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
@@ -10,17 +11,17 @@ using Sporeo.BuildingBlocks.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Application.Abstractions.Persistence;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Application.Venues.Abstractions.ReadModels;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Venues.Events;
+using Sporeo.Fixtures.Infrastructure.Persistence.Caching;
 using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
 using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 using Sporeo.Fixtures.Infrastructure.Persistence.Exceptions;
-using Sporeo.Fixtures.Infrastructure.Persistence.Geocoding;
 using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
 using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
@@ -36,27 +37,63 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Adds the Fixtures EF Core persistence layer to the service collection.
+    /// Adds the minimal Fixtures database stack required for migrations and seeding
+    /// (EF Core context, interceptors, domain-event type registry, and seeder).
     /// </summary>
     /// <param name="services">The service collection to configure.</param>
     /// <param name="configuration">The application configuration containing the connection string.</param>
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
-    public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddFixturesDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<AuditableEntityInterceptor>();
         services.AddSingleton<VenueLocationInterceptor>();
-        services.AddSingleton<IDatabaseExceptionClassifier, SqlServerDatabaseExceptionClassifier>();
         services.AddSingleton<IDomainEventTypeRegistry>(_ => new DomainEventTypeRegistry(
         [
             new KeyValuePair<string, Type>(
                 FixturesOutboxTypeKeys.VenueCreatedDomainEvent,
                 typeof(VenueCreatedDomainEvent))
         ]));
-        services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
-        services.AddScoped<IGeocodingCache, EfCoreGeocodingCache>();
         services.AddScoped<FixturesDatabaseSeeder>();
         services.AddSqlServer(configuration);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the full Fixtures EF Core persistence layer, including repositories and outbox storage.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="configuration">The application configuration containing the connection string.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
+    public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddFixturesDatabase(configuration);
+        services.AddSingleton<IDatabaseExceptionClassifier, SqlServerDatabaseExceptionClassifier>();
+        services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
         services.AddRepositories();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds Redis-backed distributed caching for the Fixtures module.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="configuration">The application configuration containing the <c>redis</c> connection string.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the <c>redis</c> connection string is missing.</exception>
+    public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration configuration)
+    {
+        var connectionString = configuration.GetConnectionString("redis")
+            ?? throw new InvalidOperationException("Connection string 'redis' was not found.");
+
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = connectionString;
+            options.InstanceName = "fixtures-cache_";
+        });
+
+        services.AddSingleton<ICacheService, RedisCacheService>();
 
         return services;
     }
@@ -100,6 +137,7 @@ public static class DependencyInjection
         services.AddScoped<ISportRepository, SportRepository>();
         services.AddScoped<IFixtureReadStore, FixtureReadStore>();
         services.AddScoped<IVenueReadStore, VenueReadStore>();
+        services.AddScoped<ILeagueReadStore, LeagueReadStore>();
 
         return services;
     }

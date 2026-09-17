@@ -30,6 +30,18 @@ public interface ILeagueRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets leagues matching the given external provider name and provider identifiers.
+    /// </summary>
+    /// <param name="providerName">The external provider name.</param>
+    /// <param name="providerIds">The identifiers assigned by the external provider.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The matching leagues. Missing identifiers are omitted.</returns>
+    Task<IReadOnlyList<League>> GetByExternalProviderIdsAsync(
+        string providerName,
+        IEnumerable<string> providerIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Registers a new league for persistence.
     /// </summary>
     /// <param name="league">The league to add.</param>

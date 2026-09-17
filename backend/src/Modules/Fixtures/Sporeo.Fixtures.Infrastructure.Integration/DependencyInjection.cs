@@ -13,6 +13,7 @@ using Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Threading.RateLimiting;
+using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration;
 
@@ -31,6 +32,7 @@ public static class DependencyInjection
 
     /// <summary>
     /// Adds typed HTTP clients and options for TheSportsDB and Nominatim.
+    /// Prefer <see cref="AddExternalFixtures"/> / <see cref="AddGeocoding"/> when only one side is needed.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -44,8 +46,11 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Adds the external fixtures provider client.
+    /// Adds TheSportsDB HTTP client for fixtures and catalog providers.
     /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddExternalFixtures(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -62,7 +67,7 @@ public static class DependencyInjection
 
         services.AddTransient<TheSportsDbApiKeyHandler>();
 
-        services.AddHttpClient<IExternalFixturesClient, TheSportsDbClient>((sp, client) =>
+        services.AddHttpClient<TheSportsDbClient>((sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<TheSportsDbOptions>>().Value;
                 var baseUrl = options.BaseUrl.TrimEnd('/') + "/";
@@ -108,12 +113,22 @@ public static class DependencyInjection
                 options.AttemptTimeout.Timeout = AttemptTimeout;
             });
 
+        // Resolve interfaces through the typed HttpClient registration so BaseAddress
+        // and TheSportsDbApiKeyHandler are applied. A plain AddTransient would inject
+        // an unconfigured HttpClient and fail on relative URIs with InvalidOperationException.
+        services.AddTransient<IExternalFixturesClient>(sp => sp.GetRequiredService<TheSportsDbClient>());
+        services.AddTransient<IExternalCatalogClient>(sp => sp.GetRequiredService<TheSportsDbClient>());
+
         return services;
     }
 
     /// <summary>
     /// Adds the Nominatim geocoding client and its rate limiter.
+    /// Requires <c>AddCaching</c> so <see cref="IGeocodingService"/> can resolve <c>ICacheService</c>.
     /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddGeocoding(
         this IServiceCollection services,
         IConfiguration configuration)

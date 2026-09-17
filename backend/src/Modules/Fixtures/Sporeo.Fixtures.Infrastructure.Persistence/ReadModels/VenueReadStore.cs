@@ -1,4 +1,3 @@
-using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 using Dapper;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.Fixtures.Application.Venues.Abstractions.ReadModels;

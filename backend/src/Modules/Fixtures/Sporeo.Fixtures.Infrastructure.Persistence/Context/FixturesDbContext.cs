@@ -9,7 +9,6 @@ using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Venues;
-using Sporeo.Fixtures.Infrastructure.Persistence.Geocoding;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Context;
 
@@ -62,11 +61,6 @@ public class FixturesDbContext : DbContext, IUnitOfWork
     /// Gets the set of outbox messages.
     /// </summary>
     public DbSet<OutboxMessage> OutboxMessages { get; set; } = null!;
-
-    /// <summary>
-    /// Gets the set of durable geocoding cache entries.
-    /// </summary>
-    public DbSet<GeocodingCacheEntry> GeocodingCacheEntries { get; set; } = null!;
 
     /// <inheritdoc />
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

@@ -38,6 +38,11 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
     public string? ExternalProviderId { get; private set; }
 
     /// <summary>
+    /// Gets a value indicating whether this league is actively monitored for synchronization.
+    /// </summary>
+    public bool IsMonitored { get; private set; }
+
+    /// <summary>
     /// Gets a value indicating whether the league has been manually edited and is locked from external synchronization.
     /// </summary>
     public bool IsManuallyEdited { get; private set; }
@@ -61,6 +66,7 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
         string? country,
         string? externalProviderName,
         string? externalProviderId,
+        bool isMonitored,
         bool isManuallyEdited) : base(id)
     {
         SportId = sportId;
@@ -68,6 +74,7 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
         Country = country;
         ExternalProviderName = externalProviderName;
         ExternalProviderId = externalProviderId;
+        IsMonitored = isMonitored;
         IsManuallyEdited = isManuallyEdited;
         IsDeleted = false;
     }
@@ -103,6 +110,7 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
             country,
             providerName,
             providerId,
+            true,
             false);
     }
 
@@ -126,6 +134,7 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
             country,
             null,
             null,
+            false,
             true);
     }
 
@@ -174,6 +183,24 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
 
         UpdateCoreFields(name, country, sportId);
         IsManuallyEdited = true;
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Changes the monitoring status of the league for synchronization.
+    /// </summary>
+    /// <param name="isMonitored">Whether the league should be actively monitored for synchronization.</param>
+    /// <returns>A successful result when the update succeeds; otherwise, a failure when the league cannot be modified.</returns>
+    public Result ChangeMonitoringStatus(bool isMonitored)
+    {
+        var guard = EnsureModifiable();
+        if (guard.IsFailure) return guard;
+
+        if (IsMonitored == isMonitored) 
+            return Result.Success();
+
+        IsMonitored = isMonitored;
 
         return Result.Success();
     }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Sporeo.Fixtures.Infrastructure.Persistence.Context;
@@ -12,9 +13,11 @@ using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(FixturesDbContext))]
-    partial class FixturesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917122135_AddLeagueIsMonitored")]
+    partial class AddLeagueIsMonitored
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -341,6 +344,47 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                         .HasFilter("[ExternalProviderName] IS NOT NULL AND [ExternalProviderId] IS NOT NULL AND [IsDeleted] = 0");
 
                     b.ToTable("venues", (string)null);
+                });
+
+            modelBuilder.Entity("Sporeo.Fixtures.Infrastructure.Persistence.Geocoding.GeocodingCacheEntry", b =>
+                {
+                    b.Property<string>("NormalizedAddress")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTimeOffset>("CachedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("City")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Country")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsFound")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("Latitude")
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<decimal?>("Longitude")
+                        .HasColumnType("decimal(9,6)");
+
+                    b.Property<string>("Street")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("NormalizedAddress");
+
+                    b.HasIndex("ExpiresAtUtc")
+                        .HasDatabaseName("IX_GeocodingCacheEntries_ExpiresAtUtc");
+
+                    b.ToTable("geocoding-cache-entries", (string)null);
                 });
 
             modelBuilder.Entity("Sporeo.Fixtures.Domain.Fixtures.Fixture", b =>

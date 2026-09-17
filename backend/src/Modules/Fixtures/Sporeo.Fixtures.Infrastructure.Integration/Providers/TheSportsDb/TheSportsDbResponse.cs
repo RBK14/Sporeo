@@ -17,3 +17,20 @@ internal sealed record TheSportsDbEvent(
     [property: JsonPropertyName("idVenue")] string? IdVenue,
     [property: JsonPropertyName("strVenue")] string? StrVenue,
     [property: JsonPropertyName("strCountry")] string? StrCountry);
+
+internal sealed record TheSportsDbSportsResponse(
+    [property: JsonPropertyName("sports")] TheSportsDbSport[]? Sports);
+
+internal sealed record TheSportsDbSport(
+    [property: JsonPropertyName("idSport")] string? IdSport,
+    [property: JsonPropertyName("strSport")] string? StrSport,
+    [property: JsonPropertyName("strSportIconGreen")] string? StrSportThumb,
+    [property: JsonPropertyName("strSportDescription")] string? StrSportDescription);
+
+internal sealed record TheSportsDbLeaguesResponse(
+    [property: JsonPropertyName("leagues")] TheSportsDbLeague[]? Leagues);
+
+internal sealed record TheSportsDbLeague(
+    [property: JsonPropertyName("idLeague")] string? IdLeague,
+    [property: JsonPropertyName("strLeague")] string? StrLeague,
+    [property: JsonPropertyName("strSport")] string? StrSport);

@@ -53,6 +53,13 @@ internal class LeagueConfiguration : IEntityTypeConfiguration<League>
             .HasFilter("[ExternalProviderName] IS NOT NULL AND [ExternalProviderId] IS NOT NULL AND [IsDeleted] = 0")
             .HasDatabaseName("IX_leagues_ExternalProvider");
 
+        builder.Property(x => x.IsMonitored)
+            .IsRequired();
+
+        builder.HasIndex(x => x.IsMonitored)
+            .HasDatabaseName("IX_Leagues_ActiveMonitored")
+            .HasFilter("[IsMonitored] = 1 AND [IsDeleted] = 0");
+
         builder.Property(x => x.IsManuallyEdited)
             .IsRequired();
 

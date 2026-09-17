@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
 using Sporeo.Fixtures.Application;
@@ -29,7 +30,7 @@ public sealed class WorkerDependencyInjectionTests
 
         services.GetRequiredService<ISender>().Should().NotBeNull();
         services.GetRequiredService<IGeocodingService>().Should().NotBeNull();
-        services.GetRequiredService<IGeocodingCache>().Should().NotBeNull();
+        services.GetRequiredService<ICacheService>().Should().NotBeNull();
         services.GetRequiredService<IGeocodingRateLimiter>().Should().NotBeNull();
         services.GetRequiredService<IExternalFixturesClient>().Should().NotBeNull();
         services.GetRequiredService<IOutboxProcessor>().Should().NotBeNull();
@@ -61,6 +62,7 @@ public sealed class WorkerDependencyInjectionTests
         {
             ["ConnectionStrings:fixtures-db"] = "Server=127.0.0.1,1433;Database=fixtures;User ID=sa;Password=placeholder;TrustServerCertificate=true",
             ["ConnectionStrings:quartz-db"] = "Server=127.0.0.1,1433;Database=quartz;User ID=sa;Password=placeholder;TrustServerCertificate=true",
+            ["ConnectionStrings:redis"] = "localhost:6379",
             ["ExternalProviders:TheSportsDb:BaseUrl"] = "https://www.thesportsdb.com/api/v1/json",
             ["ExternalProviders:TheSportsDb:ApiKey"] = "test-api-key",
             ["ExternalProviders:Nominatim:BaseUrl"] = "https://nominatim.openstreetmap.org",
@@ -87,8 +89,10 @@ public sealed class WorkerDependencyInjectionTests
         builder.Services.AddWorkerConfiguration(builder.Configuration);
         builder.Services.AddApplication();
         builder.Services.AddPersistence(builder.Configuration);
+        builder.Services.AddCaching(builder.Configuration);
         builder.Services.AddBuildingBlocksMessaging();
-        builder.Services.AddIntegration(builder.Configuration);
+        builder.Services.AddExternalFixtures(builder.Configuration);
+        builder.Services.AddGeocoding(builder.Configuration);
         builder.Services.AddWorkerServices(builder.Configuration);
 
         return builder.Build();
