@@ -13,7 +13,7 @@ using System.Text.Json;
 namespace Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
 
 /// <summary>
-/// Nominatim-backed geocoding service with durable caching and process-wide rate limiting.
+/// Nominatim-backed geocoding service with Redis caching and process-wide rate limiting.
 /// </summary>
 internal sealed class NominatimGeocodingService(
     HttpClient httpClient,
@@ -52,13 +52,17 @@ internal sealed class NominatimGeocodingService(
 
         var cacheKey = $"{CacheKeyPrefix}{normalizedAddress}";
 
-        var cached = await cacheService.GetAsync<GeocodingCacheLookup>(cacheKey, cancellationToken);
+        var cached = await cacheService.GetAsync<GeocodingCacheEntry>(cacheKey, cancellationToken);
         if (cached is not null)
         {
-            if (!cached.IsFound || cached.Location is null)
+            if (!cached.IsFound)
                 return Result.Failure<GeocodedLocation>(NotFound);
 
-            return Result.Success(cached.Location);
+            var cachedLocation = TryMapCachedLocation(cached);
+            if (cachedLocation is null)
+                return Result.Failure<GeocodedLocation>(ParseError);
+
+            return Result.Success(cachedLocation);
         }
 
         var requestUri =
@@ -87,7 +91,7 @@ internal sealed class NominatimGeocodingService(
             {
                 await cacheService.SetAsync(
                     cacheKey,
-                    new GeocodingCacheLookup(false, null),
+                    GeocodingCacheEntry.Miss(),
                     options.Value.MissCacheTtl,
                     cancellationToken);
                 return Result.Failure<GeocodedLocation>(NotFound);
@@ -121,7 +125,7 @@ internal sealed class NominatimGeocodingService(
 
             await cacheService.SetAsync(
                 cacheKey,
-                new GeocodingCacheLookup(true, geocoded),
+                GeocodingCacheEntry.Found(geocoded),
                 options.Value.FoundCacheTtl,
                 cancellationToken);
 
@@ -139,9 +143,50 @@ internal sealed class NominatimGeocodingService(
         }
     }
 
-    private sealed record GeocodingCacheLookup(
+    /// <summary>
+    /// Primitive cache payload for Redis JSON serialization.
+    /// Domain value objects (<see cref="Coordinates"/>, <see cref="Address"/>) are not System.Text.Json-friendly.
+    /// </summary>
+    private sealed record GeocodingCacheEntry(
         bool IsFound,
-        GeocodedLocation? Location);
+        double? Latitude,
+        double? Longitude,
+        string? Street,
+        string? City,
+        string? Country)
+    {
+        public static GeocodingCacheEntry Miss() =>
+            new(false, null, null, null, null, null);
+
+        public static GeocodingCacheEntry Found(GeocodedLocation location) =>
+            new(
+                true,
+                location.Coordinates.Latitude,
+                location.Coordinates.Longitude,
+                location.Address?.Street,
+                location.Address?.City,
+                location.Address?.Country);
+    }
+
+    private static GeocodedLocation? TryMapCachedLocation(GeocodingCacheEntry cached)
+    {
+        if (cached.Latitude is null || cached.Longitude is null)
+            return null;
+
+        var coordinatesResult = Coordinates.Create(cached.Latitude.Value, cached.Longitude.Value);
+        if (coordinatesResult.IsFailure)
+            return null;
+
+        Address? address = null;
+        if (!string.IsNullOrWhiteSpace(cached.Country))
+        {
+            var addressResult = Address.Create(cached.Street, cached.City, cached.Country);
+            if (addressResult.IsSuccess)
+                address = addressResult.Value;
+        }
+
+        return new GeocodedLocation(coordinatesResult.Value, address);
+    }
 
     private static string SanitizeVenueName(string name)
     {
