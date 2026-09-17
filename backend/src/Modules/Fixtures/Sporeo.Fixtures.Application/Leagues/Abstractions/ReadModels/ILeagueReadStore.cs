@@ -3,18 +3,20 @@
 namespace Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
 
 /// <summary>
-/// Represents a read-only store for league data, providing methods to retrieve league statuses based on provider information.
+/// Read-model port for league catalog status lookups.
 /// </summary>
 public interface ILeagueReadStore
 {
     /// <summary>
-    /// Retrieves the statuses of leagues based on the provided external provider name and a collection of league provider IDs.
-    /// The result is a dictionary mapping each league provider ID to a tuple containing the league's unique identifier and its monitored status.
+    /// Gets monitoring status for leagues matching the given external provider identity.
     /// </summary>
-    /// <param name="providerName"></param>
-    /// <param name="leagueProviderIds"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <param name="providerName">The external provider name.</param>
+    /// <param name="leagueProviderIds">The league identifiers assigned by the external provider.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>
+    /// A dictionary keyed by external provider league id, mapping to the local league id and monitored flag.
+    /// Missing identifiers are omitted.
+    /// </returns>
     Task<IReadOnlyDictionary<string, (LeagueId Id, bool IsMonitored)>> GetLeagueStatusesAsync(
         string providerName,
         IEnumerable<string> leagueProviderIds,

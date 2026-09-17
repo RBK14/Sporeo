@@ -8,12 +8,17 @@ using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
 
 namespace Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 
+/// <summary>
+/// Loads a paged sports catalog from cache (or the external provider), enriched with local monitoring status.
+/// </summary>
 internal sealed class GetCatalogQueryHandler(
     ILeagueReadStore leagueReadStore,
     ICacheService cacheService,
     IExternalCatalogClient externalClient) : IQueryHandler<GetCatalogQuery, PagedResult<CatalogSportResponse>>
 {
     // todo: Dodać SportId do Response i przekazywać je jeżeli Sport istnieje w DB
+
+    /// <inheritdoc />
     public async Task<Result<PagedResult<CatalogSportResponse>>> Handle(GetCatalogQuery request, CancellationToken cancellationToken)
     {
         var cachedSports = await cacheService.GetAsync<List<ExternalSportDto>>(CatalogCacheKeys.SportsCacheKey, cancellationToken) ?? [];

@@ -16,7 +16,7 @@ public sealed record CatalogSportResponse(
 /// <summary>
 /// League entry nested under a catalog sport response.
 /// </summary>
-/// <param name="Id">The unique identifier of the league in the system.</param>
+/// <param name="Id">The local league identifier when the league already exists; otherwise <see langword="null"/>.</param>
 /// <param name="ProviderId">The league identifier assigned by the external provider.</param>
 /// <param name="ProviderName">The external provider name.</param>
 /// <param name="Name">The display name of the league.</param>

@@ -4,6 +4,9 @@ using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Caching;
 
+/// <summary>
+/// Redis-backed implementation of <see cref="ICacheService"/> using System.Text.Json.
+/// </summary>
 internal sealed class RedisCacheService(IDistributedCache distributedCache) : ICacheService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()

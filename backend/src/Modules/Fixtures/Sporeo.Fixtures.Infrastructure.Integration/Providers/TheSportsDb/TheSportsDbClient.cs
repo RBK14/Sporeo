@@ -54,6 +54,7 @@ internal sealed class TheSportsDbClient(
         };
     }
 
+    /// <inheritdoc />
     public async Task<Result<IReadOnlyList<ExternalSportDto>>> FetchSportsAsync(CancellationToken cancellationToken = default)
     {
         var apiResult = await FetchFromApiAsync<TheSportsDbSportsResponse>("all_sports.php", cancellationToken);
@@ -75,6 +76,7 @@ internal sealed class TheSportsDbClient(
         return Result.Success<IReadOnlyList<ExternalSportDto>>(mapped);
     }
 
+    /// <inheritdoc />
     public async Task<Result<IReadOnlyList<ExternalLeagueDto>>> FetchLeaguesAsync(CancellationToken cancellationToken = default)
     {
         var apiResult = await FetchFromApiAsync<TheSportsDbLeaguesResponse>("all_leagues.php", cancellationToken);
