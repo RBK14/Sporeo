@@ -19,4 +19,10 @@ public sealed record CatalogSportResponse(
 /// <param name="ProviderId">The league identifier assigned by the external provider.</param>
 /// <param name="ProviderName">The external provider name.</param>
 /// <param name="Name">The display name of the league.</param>
-public sealed record CatalogLeagueResponse(string ProviderId, string ProviderName, string Name);
+/// <param name="IsMonitored">Indicates whether the league is monitored by synchronization processes.</param>
+public sealed record CatalogLeagueResponse(
+    Guid? Id,
+    string ProviderId,
+    string ProviderName,
+    string Name,
+    bool IsMonitored);

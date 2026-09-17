@@ -15,6 +15,7 @@ internal sealed class UpdateMonitoringCommandHandler(
     ILeagueRepository leagueRepository,
     ICacheService cacheService) : ICommandHandler<UpdateMonitoringCommand>
 {
+    // todo: Zmienić handler tak, żeby aktualizowało IsMonitored po LeagueId a nie ProviderId
     public async Task<Result> Handle(UpdateMonitoringCommand request, CancellationToken cancellationToken)
     {
         var cachedSports = await cacheService.GetAsync<List<ExternalSportDto>>(CatalogCacheKeys.SportsCacheKey, cancellationToken) ?? [];
