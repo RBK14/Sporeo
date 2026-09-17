@@ -3,6 +3,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Domain.Results;
+using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Infrastructure.Integration.Observability;
@@ -18,7 +19,7 @@ namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 /// </remarks>
 internal sealed class TheSportsDbClient(
     HttpClient httpClient,
-    ILogger<TheSportsDbClient> logger) : IExternalFixturesClient
+    ILogger<TheSportsDbClient> logger) : IExternalFixturesClient, IExternalCatalogClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -51,6 +52,52 @@ internal sealed class TheSportsDbClient(
             _ => Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
                 new Error("ExternalFixtures.UnsupportedSyncMode", $"Unsupported sync mode '{syncMode}'."))
         };
+    }
+
+    public async Task<Result<IReadOnlyList<ExternalSportDto>>> FetchSportsAsync(CancellationToken cancellationToken = default)
+    {
+        var apiResult = await FetchFromApiAsync<TheSportsDbSportsResponse>("all_sports.php", cancellationToken);
+
+        if (apiResult.IsFailure)
+            return Result.Failure<IReadOnlyList<ExternalSportDto>>(apiResult.Error);
+
+        if (apiResult.Value.Sports is null || apiResult.Value.Sports.Length == 0)
+            return Result.Success<IReadOnlyList<ExternalSportDto>>([]);
+
+        var mapped = apiResult.Value.Sports
+            .Where(s => !string.IsNullOrWhiteSpace(s.IdSport) && !string.IsNullOrWhiteSpace(s.StrSport))
+            .Select(s => new ExternalSportDto(
+                ProviderId: s.IdSport!,
+                ProviderName: ProviderName,
+                Name: s.StrSport!))
+            .ToList();
+
+        return Result.Success<IReadOnlyList<ExternalSportDto>>(mapped);
+    }
+
+    public async Task<Result<IReadOnlyList<ExternalLeagueDto>>> FetchLeaguesAsync(CancellationToken cancellationToken = default)
+    {
+        var apiResult = await FetchFromApiAsync<TheSportsDbLeaguesResponse>("all_leagues.php", cancellationToken);
+
+        if (apiResult.IsFailure)
+            return Result.Failure<IReadOnlyList<ExternalLeagueDto>>(apiResult.Error);
+
+        if (apiResult.Value.Leagues is null || apiResult.Value.Leagues.Length == 0)
+            return Result.Success<IReadOnlyList<ExternalLeagueDto>>([]);
+
+        var mapped = apiResult.Value.Leagues
+            .Where(l => !string.IsNullOrWhiteSpace(l.IdLeague)
+                && !string.IsNullOrWhiteSpace(l.StrSport)
+                && !string.IsNullOrWhiteSpace(l.StrLeague))
+            .Select(l => new ExternalLeagueDto(
+                ProviderId: l.IdLeague!,
+                ProviderName: ProviderName,
+                ProviderSportName: l.StrSport!,
+                Name: l.StrLeague!,
+                Country: string.Empty))
+            .ToList();
+
+        return Result.Success<IReadOnlyList<ExternalLeagueDto>>(mapped);
     }
 
     private async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchShortTermAsync(
@@ -111,6 +158,59 @@ internal sealed class TheSportsDbClient(
 
         var requestUri = QueryHelpers.AddQueryString(relativePath, query);
 
+        var apiResult = await FetchFromApiAsync<TheSportsDbResponse>(requestUri, cancellationToken);
+        if (apiResult.IsFailure)
+            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(apiResult.Error);
+
+        var data = apiResult.Value;
+
+        // Empty provider responses are treated as a successful no-op — never as a signal to clear local data.
+        if (data?.Events is null || data.Events.Length == 0)
+            return Result.Success<IReadOnlyList<ExternalFixtureDto>>([]);
+
+        var mapped = new List<ExternalFixtureDto>(data.Events.Length);
+        var dropped = 0;
+
+        foreach (var apiEvent in data.Events)
+        {
+            var mapResult = MapToDto(apiEvent, relativePath);
+            if (mapResult.Dto is null)
+            {
+                dropped++;
+                FixturesIntegrationMetrics.EventsDropped.Add(
+                    1,
+                    new KeyValuePair<string, object?>("provider", ProviderName),
+                    new KeyValuePair<string, object?>("reason", mapResult.DropReason ?? "unknown"));
+
+                logger.LogWarning(
+                    "Dropped TheSportsDb event {EventId} for {Path}: {DropReason}",
+                    apiEvent.IdEvent ?? "(null)",
+                    relativePath,
+                    mapResult.DropReason);
+                continue;
+            }
+
+            mapped.Add(mapResult.Dto);
+        }
+
+        if (dropped > 0)
+        {
+            logger.LogWarning(
+                "Dropped {DroppedCount} of {TotalCount} TheSportsDb events for {Path} due to invalid mapping.",
+                dropped,
+                data.Events.Length,
+                relativePath);
+        }
+
+        // All events present but every one failed validation/parsing — surface as InvalidPayload.
+        if (mapped.Count == 0)
+            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(InvalidPayload);
+
+        return Result.Success<IReadOnlyList<ExternalFixtureDto>>(mapped);
+    }
+
+    private async Task<Result<T>> FetchFromApiAsync<T>(string requestUri, CancellationToken cancellationToken)
+    {
         try
         {
             using var response = await httpClient.GetAsync(
@@ -119,69 +219,30 @@ internal sealed class TheSportsDbClient(
                 cancellationToken);
 
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-                return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Unauthorized);
+                return Result.Failure<T>(Unauthorized);
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(RateLimited);
+                return Result.Failure<T>(RateLimited);
 
             if ((int)response.StatusCode >= 500)
-                return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Transient);
+                return Result.Failure<T>(Transient);
 
             if (!response.IsSuccessStatusCode)
             {
                 logger.LogWarning(
                     "TheSportsDb API error: {Path} returned status {StatusCode}",
-                    relativePath,
+                    requestUri,
                     (int)response.StatusCode);
-                return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Permanent);
+                return Result.Failure<T>(Permanent);
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var data = await JsonSerializer.DeserializeAsync<TheSportsDbResponse>(stream, JsonOptions, cancellationToken);
+            var data = await JsonSerializer.DeserializeAsync<T>(stream, JsonOptions, cancellationToken);
 
-            // Empty provider responses are treated as a successful no-op — never as a signal to clear local data.
-            if (data?.Events is null || data.Events.Length == 0)
-                return Result.Success<IReadOnlyList<ExternalFixtureDto>>([]);
+            if (data is null)
+                return Result.Failure<T>(InvalidPayload);
 
-            var mapped = new List<ExternalFixtureDto>(data.Events.Length);
-            var dropped = 0;
-
-            foreach (var apiEvent in data.Events)
-            {
-                var mapResult = MapToDto(apiEvent, relativePath);
-                if (mapResult.Dto is null)
-                {
-                    dropped++;
-                    FixturesIntegrationMetrics.EventsDropped.Add(
-                        1,
-                        new KeyValuePair<string, object?>("provider", ProviderName),
-                        new KeyValuePair<string, object?>("reason", mapResult.DropReason ?? "unknown"));
-
-                    logger.LogWarning(
-                        "Dropped TheSportsDb event {EventId} for {Path}: {DropReason}",
-                        apiEvent.IdEvent ?? "(null)",
-                        relativePath,
-                        mapResult.DropReason);
-                    continue;
-                }
-
-                mapped.Add(mapResult.Dto);
-            }
-
-            if (dropped > 0)
-            {
-                logger.LogWarning(
-                    "Dropped {DroppedCount} of {TotalCount} TheSportsDb events for {Path} due to invalid mapping.",
-                    dropped,
-                    data.Events.Length,
-                    relativePath);
-            }
-
-            // All events present but every one failed validation/parsing — surface as InvalidPayload.
-            if (mapped.Count == 0)
-                return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(InvalidPayload);
-
-            return Result.Success<IReadOnlyList<ExternalFixtureDto>>(mapped);
+            return Result.Success(data);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -189,27 +250,18 @@ internal sealed class TheSportsDbClient(
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(
-                "Transient HTTP failure while fetching {Path}: {ExceptionType}.",
-                relativePath,
-                ex.GetType().Name);
-            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Transient);
+            logger.LogError("Transient HTTP failure while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
+            return Result.Failure<T>(Transient);
         }
         catch (JsonException ex)
         {
-            logger.LogError(
-                "Invalid JSON payload while fetching {Path}: {ExceptionType}.",
-                relativePath,
-                ex.GetType().Name);
-            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(InvalidPayload);
+            logger.LogError("Invalid JSON payload while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
+            return Result.Failure<T>(InvalidPayload);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(
-                "Unexpected error while fetching {Path}: {ExceptionType}.",
-                relativePath,
-                ex.GetType().Name);
-            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Permanent);
+            logger.LogError("Unexpected error while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
+            return Result.Failure<T>(Permanent);
         }
     }
 
