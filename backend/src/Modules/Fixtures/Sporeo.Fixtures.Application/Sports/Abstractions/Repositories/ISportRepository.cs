@@ -30,6 +30,18 @@ public interface ISportRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets sports matching the given external provider name and provider identifiers.
+    /// </summary>
+    /// <param name="providerName">The external provider name.</param>
+    /// <param name="providerIds">The identifiers assigned by the external provider.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The matching venues. Missing identifiers are omitted.</returns>
+    Task<IReadOnlyList<Sport>> GetByExternalProviderIdsAsync(
+        string providerName,
+        IEnumerable<string> providerIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Registers a new sport for persistence.
     /// </summary>
     /// <param name="sport">The sport to add.</param>
