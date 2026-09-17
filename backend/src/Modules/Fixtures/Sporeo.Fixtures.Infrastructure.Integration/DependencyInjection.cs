@@ -32,6 +32,7 @@ public static class DependencyInjection
 
     /// <summary>
     /// Adds typed HTTP clients and options for TheSportsDB and Nominatim.
+    /// Prefer <see cref="AddExternalFixtures"/> / <see cref="AddGeocoding"/> when only one side is needed.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -45,8 +46,11 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// Adds the external fixtures provider client.
+    /// Adds TheSportsDB HTTP client for fixtures and catalog providers.
     /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddExternalFixtures(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -120,7 +124,11 @@ public static class DependencyInjection
 
     /// <summary>
     /// Adds the Nominatim geocoding client and its rate limiter.
+    /// Requires <c>AddCaching</c> so <see cref="IGeocodingService"/> can resolve <c>ICacheService</c>.
     /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddGeocoding(
         this IServiceCollection services,
         IConfiguration configuration)

@@ -37,25 +37,39 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Adds the Fixtures EF Core persistence layer to the service collection.
+    /// Adds the minimal Fixtures database stack required for migrations and seeding
+    /// (EF Core context, interceptors, domain-event type registry, and seeder).
     /// </summary>
     /// <param name="services">The service collection to configure.</param>
     /// <param name="configuration">The application configuration containing the connection string.</param>
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
-    public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddFixturesDatabase(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton<AuditableEntityInterceptor>();
         services.AddSingleton<VenueLocationInterceptor>();
-        services.AddSingleton<IDatabaseExceptionClassifier, SqlServerDatabaseExceptionClassifier>();
         services.AddSingleton<IDomainEventTypeRegistry>(_ => new DomainEventTypeRegistry(
         [
             new KeyValuePair<string, Type>(
                 FixturesOutboxTypeKeys.VenueCreatedDomainEvent,
                 typeof(VenueCreatedDomainEvent))
         ]));
-        services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
         services.AddScoped<FixturesDatabaseSeeder>();
         services.AddSqlServer(configuration);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds the full Fixtures EF Core persistence layer, including repositories and outbox storage.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    /// <param name="configuration">The application configuration containing the connection string.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
+    public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddFixturesDatabase(configuration);
+        services.AddSingleton<IDatabaseExceptionClassifier, SqlServerDatabaseExceptionClassifier>();
+        services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
         services.AddRepositories();
 
         return services;

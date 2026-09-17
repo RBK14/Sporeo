@@ -8,14 +8,15 @@ using Sporeo.Fixtures.Infrastructure.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.Services.AddApplication();
-builder.Services.AddIntegration(builder.Configuration);
-builder.Services.AddPersistence(builder.Configuration);
-builder.Services.AddCaching(builder.Configuration);
+builder.Services.AddApplication()
+    .AddIntegration(builder.Configuration)
+    .AddPersistence(builder.Configuration)
+    .AddCaching(builder.Configuration);
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
+
 app.MapGet("/", () => "Hello World!");
 
 app.MapGet("/catalog", async (ISender sender) =>

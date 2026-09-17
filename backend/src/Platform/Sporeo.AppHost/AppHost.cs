@@ -22,6 +22,7 @@ builder.AddProject<Projects.Sporeo_Fixtures_Api>("fixtures-api")
     .WithReference(fixturesDb)
     .WithReference(redis)
     .WithEnvironment("ExternalProviders__TheSportsDb__ApiKey", theSportsDbApiKey)
+    .WaitFor(redis)
     .WaitForCompletion(migrationTask);
 
 builder.AddProject<Projects.Sporeo_Fixtures_Worker>("fixtures-worker")
@@ -29,6 +30,7 @@ builder.AddProject<Projects.Sporeo_Fixtures_Worker>("fixtures-worker")
     .WithReference(quartzDb)
     .WithReference(redis)
     .WithEnvironment("ExternalProviders__TheSportsDb__ApiKey", theSportsDbApiKey)
+    .WaitFor(redis)
     .WaitForCompletion(migrationTask);
 
 builder.Build().Run();
