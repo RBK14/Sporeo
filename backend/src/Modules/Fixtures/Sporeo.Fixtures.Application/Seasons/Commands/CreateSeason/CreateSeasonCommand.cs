@@ -1,4 +1,6 @@
 ﻿using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Seasons.Commands.CreateSeason;
 
@@ -8,5 +10,5 @@ namespace Sporeo.Fixtures.Application.Seasons.Commands.CreateSeason;
 /// <param name="LeagueId">The parent league identifier.</param>
 /// <param name="Name">The season display name.</param>
 public sealed record CreateSeasonCommand(
-    Guid LeagueId,
-    string Name) : ICommand<Guid>;
+    LeagueId LeagueId,
+    string Name) : ICommand<SeasonId>;

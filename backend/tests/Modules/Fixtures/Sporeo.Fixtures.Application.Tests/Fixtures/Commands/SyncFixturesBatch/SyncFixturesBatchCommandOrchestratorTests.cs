@@ -11,6 +11,7 @@ using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Domain.Leagues;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Tests.Fixtures.Commands;
@@ -37,8 +38,8 @@ public sealed class SyncFixturesBatchCommandOrchestratorTests
         var chunkCallCount = 0;
 
         sender.Send(Arg.Any<EnsureSeasonsForSyncCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success<IReadOnlyDictionary<string, Guid>>(
-                new Dictionary<string, Guid> { ["2025-2026"] = Guid.NewGuid() }));
+            .Returns(Result.Success<IReadOnlyDictionary<string, SeasonId>>(
+                new Dictionary<string, SeasonId> { ["2025-2026"] = SeasonId.FromValue(Guid.NewGuid()) }));
 
         sender.Send(Arg.Any<SyncFixturesBatchChunkCommand>(), Arg.Any<CancellationToken>())
             .Returns(ci =>
@@ -74,8 +75,8 @@ public sealed class SyncFixturesBatchCommandOrchestratorTests
         var chunkAttempts = 0;
 
         sender.Send(Arg.Any<EnsureSeasonsForSyncCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success<IReadOnlyDictionary<string, Guid>>(
-                new Dictionary<string, Guid> { ["2025-2026"] = Guid.NewGuid() }));
+            .Returns(Result.Success<IReadOnlyDictionary<string, SeasonId>>(
+                new Dictionary<string, SeasonId> { ["2025-2026"] = SeasonId.FromValue(Guid.NewGuid()) }));
 
         sender.Send(Arg.Any<SyncFixturesBatchChunkCommand>(), Arg.Any<CancellationToken>())
             .Returns(ci =>
@@ -114,8 +115,8 @@ public sealed class SyncFixturesBatchCommandOrchestratorTests
 
         var sender = Substitute.For<ISender>();
         sender.Send(Arg.Any<EnsureSeasonsForSyncCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success<IReadOnlyDictionary<string, Guid>>(
-                new Dictionary<string, Guid> { ["2025-2026"] = Guid.NewGuid() }));
+            .Returns(Result.Success<IReadOnlyDictionary<string, SeasonId>>(
+                new Dictionary<string, SeasonId> { ["2025-2026"] = SeasonId.FromValue(Guid.NewGuid()) }));
 
         sender.Send(Arg.Any<SyncFixturesBatchChunkCommand>(), Arg.Any<CancellationToken>())
             .Returns<Task<Result<SyncBatchResultDto>>>(_ => throw CreateUniqueViolation());
@@ -144,8 +145,8 @@ public sealed class SyncFixturesBatchCommandOrchestratorTests
 
         var sender = Substitute.For<ISender>();
         sender.Send(Arg.Any<EnsureSeasonsForSyncCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Success<IReadOnlyDictionary<string, Guid>>(
-                new Dictionary<string, Guid> { ["2025-2026"] = Guid.NewGuid() }));
+            .Returns(Result.Success<IReadOnlyDictionary<string, SeasonId>>(
+                new Dictionary<string, SeasonId> { ["2025-2026"] = SeasonId.FromValue(Guid.NewGuid()) }));
 
         sender.Send(Arg.Any<SyncFixturesBatchChunkCommand>(), Arg.Any<CancellationToken>())
             .Returns<Task<Result<SyncBatchResultDto>>>(_ => throw new InvalidOperationException("db down"));

@@ -1,5 +1,5 @@
-﻿using Quartz;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
+using Quartz;
+using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
 
 namespace Sporeo.Fixtures.Worker.Jobs.Fixtures;
 

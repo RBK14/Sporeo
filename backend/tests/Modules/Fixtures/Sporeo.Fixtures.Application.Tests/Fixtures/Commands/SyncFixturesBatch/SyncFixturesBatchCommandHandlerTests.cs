@@ -8,6 +8,7 @@ using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Tests.Fixtures.Commands;
@@ -182,9 +183,9 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
         IReadOnlyList<ExternalFixtureDto> fixtures) =>
         new(
             "TheSportsDB",
-            SportGuid,
-            LeagueGuid,
-            new Dictionary<string, Guid> { ["2025-2026"] = SeasonGuid },
+            SportId.FromValue(SportGuid),
+            LeagueId.FromValue(LeagueGuid),
+            new Dictionary<string, SeasonId> { ["2025-2026"] = SeasonId.FromValue(SeasonGuid) },
             fixtures);
 
     private static ExternalFixtureDto CreateExternalFixture(string externalId) =>

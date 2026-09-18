@@ -36,7 +36,7 @@ public sealed class EnrichVenueLocationCommandHandlerTests
 
         var handler = new EnrichVenueLocationCommandHandler(repository, geocoding);
 
-        var result = await handler.Handle(new EnrichVenueLocationCommand(venue.Id.Value), CancellationToken.None);
+        var result = await handler.Handle(new EnrichVenueLocationCommand(venue.Id), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be("Geocoding.Transient");
@@ -61,7 +61,7 @@ public sealed class EnrichVenueLocationCommandHandlerTests
         var geocoding = Substitute.For<IGeocodingService>();
         var handler = new EnrichVenueLocationCommandHandler(repository, geocoding);
 
-        var result = await handler.Handle(new EnrichVenueLocationCommand(venue.Id.Value), CancellationToken.None);
+        var result = await handler.Handle(new EnrichVenueLocationCommand(venue.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         await geocoding.DidNotReceiveWithAnyArgs()

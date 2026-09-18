@@ -1,4 +1,5 @@
 ﻿using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
+using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Venues.Commands.EnrichVenueLocation;
 
@@ -10,4 +11,4 @@ namespace Sporeo.Fixtures.Application.Venues.Commands.EnrichVenueLocation;
 /// Idempotent: venues that already have coordinates are skipped successfully.
 /// Failures from geocoding or domain updates are propagated so the outbox can retry.
 /// </remarks>
-public sealed record EnrichVenueLocationCommand(Guid VenueId) : ICommand;
+public sealed record EnrichVenueLocationCommand(VenueId VenueId) : ICommand;

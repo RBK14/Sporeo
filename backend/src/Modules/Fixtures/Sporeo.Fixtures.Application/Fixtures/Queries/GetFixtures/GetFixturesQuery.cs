@@ -11,4 +11,4 @@ namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtures;
 /// <param name="Filters">Optional filters applied to the fixture list.</param>
 public sealed record GetFixturesQuery(
     PaginationParams Pagination,
-    FixtureFilters Filters) : IQuery<PagedResult<FixtureListItemResponse>>;
+    FixtureFilters Filters) : IQuery<PagedResult<FixtureListItemReadModel>>;

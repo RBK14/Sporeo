@@ -28,9 +28,6 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
         SyncFixturesBatchChunkCommand request,
         CancellationToken cancellationToken)
     {
-        var sportId = SportId.FromValue(request.SportId);
-        var leagueId = LeagueId.FromValue(request.LeagueId);
-
         var prepared = PrepareFixtures(request.ProviderName, request.Fixtures);
         var venues = prepared.Fixtures
             .Where(fixture => fixture.Venue is not null &&
@@ -59,8 +56,8 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
         ProcessVenues(request.ProviderName, venues, existingVenues, venueIdMap);
 
         var fixtureReport = ProcessFixtures(
-            sportId,
-            leagueId,
+            request.SportId,
+            request.LeagueId,
             request.SeasonMap,
             request.ProviderName,
             prepared.Fixtures,
@@ -269,7 +266,7 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
     private SyncBatchResultDto ProcessFixtures(
         SportId sportId,
         LeagueId leagueId,
-        IReadOnlyDictionary<string, Guid> seasonMap,
+        IReadOnlyDictionary<string, SeasonId> seasonMap,
         string providerName,
         IReadOnlyList<ExternalFixtureDto> incomingFixtures,
         Dictionary<string, Fixture> existingFixtures,
@@ -292,9 +289,9 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
             // Dynamiczne mapowanie sezonu na podstawie nazwy dostarczonej w locie (np. "2025-2026")
             SeasonId? seasonId = null;
             if (!string.IsNullOrWhiteSpace(incomingFixture.SeasonName) &&
-                seasonMap.TryGetValue(incomingFixture.SeasonName, out var mappedSeasonGuid))
+                seasonMap.TryGetValue(incomingFixture.SeasonName, out var mappedSeasonId))
             {
-                seasonId = SeasonId.FromValue(mappedSeasonGuid);
+                seasonId = mappedSeasonId;
             }
 
             if (existingFixtures.TryGetValue(incomingFixture.ExternalId, out var fixture))

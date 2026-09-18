@@ -5,6 +5,7 @@ using Sporeo.BuildingBlocks.Domain.Time;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models;
 using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
 using Sporeo.Fixtures.Domain.Venues.Events;
+using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Tests.Messaging;
 
@@ -20,7 +21,7 @@ public sealed class DomainEventTypeRegistryTests
                 typeof(VenueCreatedDomainEvent))
         ]);
 
-        var domainEvent = new VenueCreatedDomainEvent(Guid.NewGuid());
+        var domainEvent = new VenueCreatedDomainEvent(VenueId.FromValue(Guid.NewGuid()));
 
         registry.GetTypeKey(domainEvent).Should().Be(FixturesOutboxTypeKeys.VenueCreatedDomainEvent);
         registry.TryResolve(FixturesOutboxTypeKeys.VenueCreatedDomainEvent, out var type).Should().BeTrue();

@@ -1,4 +1,7 @@
-﻿namespace Sporeo.Fixtures.Application.Fixtures.Queries.Common;
+﻿using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
+
+namespace Sporeo.Fixtures.Application.Fixtures.Queries.Common;
 
 /// <summary>
 /// Optional filters applied when listing fixtures.
@@ -8,7 +11,7 @@
 /// <param name="DateFrom">When set, only fixtures that start on or after this instant are returned.</param>
 /// <param name="DateTo">When set, only fixtures that start on or before this instant are returned.</param>
 public sealed record FixtureFilters(
-    Guid? SportId = null,
-    Guid? LeagueId = null,
+    SportId? SportId = null,
+    LeagueId? LeagueId = null,
     DateTimeOffset? DateFrom = null,
     DateTimeOffset? DateTo = null);

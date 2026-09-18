@@ -1,4 +1,6 @@
-﻿namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtures;
+using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
+
+namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtures;
 
 /// <summary>
 /// Summary item returned when listing fixtures.
@@ -8,8 +10,8 @@
 /// <param name="StartDate">The scheduled start date and time.</param>
 /// <param name="SportName">The display name of the fixture sport.</param>
 /// <param name="LeagueName">The display name of the fixture league, if assigned.</param>
-public sealed record FixtureListItemResponse(
-    Guid Id,
+public sealed record FixtureListItemReadModel(
+    FixtureId Id,
     string Name,
     DateTimeOffset StartDate,
     string SportName,

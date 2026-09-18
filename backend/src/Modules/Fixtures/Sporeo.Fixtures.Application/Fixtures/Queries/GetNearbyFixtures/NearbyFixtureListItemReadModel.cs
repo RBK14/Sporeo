@@ -1,4 +1,6 @@
-﻿namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetNearbyFixtures;
+using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
+
+namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetNearbyFixtures;
 
 /// <summary>
 /// Summary item returned when listing fixtures near a geographic point.
@@ -9,8 +11,8 @@
 /// <param name="SportName">The display name of the fixture sport.</param>
 /// <param name="LeagueName">The display name of the fixture league, if assigned.</param>
 /// <param name="DistanceInMeters">The distance in meters from the search origin to the fixture venue.</param>
-public sealed record NearbyFixtureListItemResponse(
-    Guid Id,
+public sealed record NearbyFixtureListItemReadModel(
+    FixtureId Id,
     string Name,
     DateTimeOffset StartDate,
     string SportName,

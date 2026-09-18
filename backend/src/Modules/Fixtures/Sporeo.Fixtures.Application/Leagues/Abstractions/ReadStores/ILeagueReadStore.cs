@@ -1,6 +1,6 @@
-﻿using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 
-namespace Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
+namespace Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
 
 /// <summary>
 /// Read-model port for league catalog status lookups.
@@ -22,5 +22,5 @@ public interface ILeagueReadStore
         IEnumerable<string> leagueProviderIds,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<MonitoredLeagueForSyncDto>> GetMonitoredLeaguesForSyncAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<MonitoredLeagueForSyncReadModel>> GetMonitoredLeaguesForSyncAsync(CancellationToken cancellationToken = default);
 }

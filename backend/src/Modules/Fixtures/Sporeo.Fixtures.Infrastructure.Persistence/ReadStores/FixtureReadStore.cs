@@ -1,19 +1,23 @@
-using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 using Dapper;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Application.Pagination;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadStores;
 using Sporeo.Fixtures.Application.Fixtures.Queries.Common;
 using Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtureDetails;
 using Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtures;
 using Sporeo.Fixtures.Application.Fixtures.Queries.GetNearbyFixtures;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
+using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
+using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.ReadModels;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.ReadStores;
 
 internal sealed class FixtureReadStore(ISqlConnectionFactory sqlConnectionFactory) : IFixtureReadStore
 {
-    public async Task<PagedResult<FixtureListItemResponse>> GetFixturesAsync(
+    public async Task<PagedResult<FixtureListItemReadModel>> GetFixturesAsync(
         FixtureFilters filters,
         PaginationParams pagination,
         CancellationToken cancellationToken = default)
@@ -58,11 +62,11 @@ internal sealed class FixtureReadStore(ISqlConnectionFactory sqlConnectionFactor
             new CommandDefinition(sql, parameters, cancellationToken: cancellationToken));
 
         var totalCount = await multi.ReadFirstAsync<int>();
-        var items = await multi.ReadAsync<FixtureListItemResponse>();
-        return new PagedResult<FixtureListItemResponse>(items, totalCount, pagination);
+        var items = await multi.ReadAsync<FixtureListItemReadModel>();
+        return new PagedResult<FixtureListItemReadModel>(items, totalCount, pagination);
     }
 
-    public async Task<PagedResult<NearbyFixtureListItemResponse>> GetNearbyFixturesAsync(
+    public async Task<PagedResult<NearbyFixtureListItemReadModel>> GetNearbyFixturesAsync(
         double latitude,
         double longitude,
         double radiusInMeters,
@@ -120,12 +124,12 @@ internal sealed class FixtureReadStore(ISqlConnectionFactory sqlConnectionFactor
             new CommandDefinition(sql, parameters, cancellationToken: cancellationToken));
 
         var totalCount = await multi.ReadFirstAsync<int>();
-        var items = await multi.ReadAsync<NearbyFixtureListItemResponse>();
-        return new PagedResult<NearbyFixtureListItemResponse>(items, totalCount, pagination);
+        var items = await multi.ReadAsync<NearbyFixtureListItemReadModel>();
+        return new PagedResult<NearbyFixtureListItemReadModel>(items, totalCount, pagination);
     }
 
-    public async Task<FixtureDetailsResponse?> GetFixtureDetailsAsync(
-        Guid fixtureId,
+    public async Task<FixtureDetailsReadModel?> GetFixtureDetailsAsync(
+        FixtureId fixtureId,
         CancellationToken cancellationToken = default)
     {
         using var connection = sqlConnectionFactory.CreateConnection();
@@ -180,27 +184,32 @@ internal sealed class FixtureReadStore(ISqlConnectionFactory sqlConnectionFactor
         public string? SeasonName { get; init; }
     }
 
-    private static FixtureDetailsResponse MapFixtureDetails(FixtureDetailsRow row)
+    private static FixtureDetailsReadModel MapFixtureDetails(FixtureDetailsRow row)
     {
-        FixtureVenueDto? venue = row.VenueId is null
+        FixtureVenueReadModel? venue = row.VenueId is null
             ? null
-            : new FixtureVenueDto(row.VenueId.Value, row.VenueName!, row.VenueStreet, row.VenueCity, row.VenueCountry);
+            : new FixtureVenueReadModel(
+                VenueId.FromValue(row.VenueId.Value),
+                row.VenueName!,
+                row.VenueStreet,
+                row.VenueCity,
+                row.VenueCountry);
 
-        FixtureLeagueDto? league = row.LeagueId is null
+        FixtureLeagueReadModel? league = row.LeagueId is null
             ? null
-            : new FixtureLeagueDto(row.LeagueId.Value, row.LeagueName!);
+            : new FixtureLeagueReadModel(LeagueId.FromValue(row.LeagueId.Value), row.LeagueName!);
 
-        FixtureSeasonDto? season = row.SeasonId is null
+        FixtureSeasonReadModel? season = row.SeasonId is null
             ? null
-            : new FixtureSeasonDto(row.SeasonId.Value, row.SeasonName!);
+            : new FixtureSeasonReadModel(SeasonId.FromValue(row.SeasonId.Value), row.SeasonName!);
 
-        return new FixtureDetailsResponse(
-            row.Id,
+        return new FixtureDetailsReadModel(
+            FixtureId.FromValue(row.Id),
             row.Name,
             row.StartDate,
             row.Status,
             venue,
-            new FixtureSportDto(row.SportId, row.SportName),
+            new FixtureSportReadModel(SportId.FromValue(row.SportId), row.SportName),
             league,
             season);
     }

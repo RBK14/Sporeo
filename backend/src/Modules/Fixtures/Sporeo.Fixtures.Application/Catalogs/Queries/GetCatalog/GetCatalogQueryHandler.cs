@@ -1,10 +1,10 @@
-﻿using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
+using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Application.Pagination;
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
 using Sporeo.Fixtures.Application.Catalogs.Common;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
 
 namespace Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 
@@ -14,12 +14,12 @@ namespace Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 internal sealed class GetCatalogQueryHandler(
     ILeagueReadStore leagueReadStore,
     ICacheService cacheService,
-    IExternalCatalogClient externalClient) : IQueryHandler<GetCatalogQuery, PagedResult<CatalogSportResponse>>
+    IExternalCatalogClient externalClient) : IQueryHandler<GetCatalogQuery, PagedResult<CatalogSportReadModel>>
 {
-    // todo: Dodać SportId do Response i przekazywać je jeżeli Sport istnieje w DB
+    // todo: Dodać SportId do ReadModel i przekazywać je jeżeli Sport istnieje w DB
 
     /// <inheritdoc />
-    public async Task<Result<PagedResult<CatalogSportResponse>>> Handle(GetCatalogQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResult<CatalogSportReadModel>>> Handle(GetCatalogQuery request, CancellationToken cancellationToken)
     {
         var cachedSports = await cacheService.GetAsync<List<ExternalSportDto>>(CatalogCacheKeys.SportsCacheKey, cancellationToken) ?? [];
         var cachedLeagues = await cacheService.GetAsync<List<ExternalLeagueDto>>(CatalogCacheKeys.LeaguesCacheKey, cancellationToken) ?? [];
@@ -30,10 +30,10 @@ internal sealed class GetCatalogQueryHandler(
             var externalLeagues = await externalClient.FetchLeaguesAsync(cancellationToken);
 
             if (externalSports.IsFailure)
-                return Result.Failure<PagedResult<CatalogSportResponse>>(externalSports.Error);
+                return Result.Failure<PagedResult<CatalogSportReadModel>>(externalSports.Error);
 
             if (externalLeagues.IsFailure)
-                return Result.Failure<PagedResult<CatalogSportResponse>>(externalLeagues.Error);
+                return Result.Failure<PagedResult<CatalogSportReadModel>>(externalLeagues.Error);
 
             cachedSports = externalSports.Value.ToList();
             cachedLeagues = externalLeagues.Value.ToList();
@@ -49,7 +49,7 @@ internal sealed class GetCatalogQueryHandler(
 
         if (pagedSportDtos.Count == 0)
         {
-            return Result.Success(new PagedResult<CatalogSportResponse>(
+            return Result.Success(new PagedResult<CatalogSportReadModel>(
                 [],
                 cachedSports.Count,
                 request.Pagination));
@@ -69,7 +69,7 @@ internal sealed class GetCatalogQueryHandler(
             cancellationToken);
 
         var pagedSports = pagedSportDtos
-        .Select(sport => new CatalogSportResponse(
+        .Select(sport => new CatalogSportReadModel(
             sport.ProviderId,
             sport.ProviderName,
             sport.Name,
@@ -79,17 +79,17 @@ internal sealed class GetCatalogQueryHandler(
                 {
                     var existsInDb = leagueStatusesMap.TryGetValue(league.ProviderId, out var dbStatus);
 
-                    return new CatalogLeagueResponse(
-                        existsInDb ? dbStatus.Id.Value : null,
+                    return new CatalogLeagueReadModel(
+                        existsInDb ? dbStatus.Id : null,
                         league.ProviderId,
                         league.ProviderName,
                         league.Name,
-                        existsInDb ? dbStatus.IsMonitored : false);
+                        existsInDb && dbStatus.IsMonitored);
                 })
                 .ToList()))
         .ToList();
 
-        return Result.Success(new PagedResult<CatalogSportResponse>(
+        return Result.Success(new PagedResult<CatalogSportReadModel>(
             pagedSports,
             cachedSports.Count,
             request.Pagination));

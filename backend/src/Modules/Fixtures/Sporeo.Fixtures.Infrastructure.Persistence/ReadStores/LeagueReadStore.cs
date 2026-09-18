@@ -1,9 +1,9 @@
-﻿using Dapper;
+using Dapper;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.ReadModels;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.ReadStores;
 internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactory) : ILeagueReadStore
 {
     private sealed record LeagueStatusDto(string ExternalProviderId, Guid Id, bool IsMonitored);
@@ -42,7 +42,7 @@ internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactor
 
     }
 
-    public async Task<IReadOnlyList<MonitoredLeagueForSyncDto>> GetMonitoredLeaguesForSyncAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<MonitoredLeagueForSyncReadModel>> GetMonitoredLeaguesForSyncAsync(CancellationToken cancellationToken = default)
     {
         using var connection = sqlConnectionFactory.CreateConnection();
 
@@ -57,7 +57,7 @@ internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactor
           AND IsDeleted = 0
         """;
 
-        var result = await connection.QueryAsync<MonitoredLeagueForSyncDto>(
+        var result = await connection.QueryAsync<MonitoredLeagueForSyncReadModel>(
             new CommandDefinition(
                 sql,
                 cancellationToken: cancellationToken));

@@ -3,8 +3,9 @@ using Sporeo.Fixtures.Application.Fixtures.Queries.Common;
 using Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtureDetails;
 using Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtures;
 using Sporeo.Fixtures.Application.Fixtures.Queries.GetNearbyFixtures;
+using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
 
-namespace Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
+namespace Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadStores;
 
 /// <summary>
 /// Read-model port for fixture list and detail queries.
@@ -14,7 +15,7 @@ public interface IFixtureReadStore
     /// <summary>
     /// Queries a paged fixture list.
     /// </summary>
-    Task<PagedResult<FixtureListItemResponse>> GetFixturesAsync(
+    Task<PagedResult<FixtureListItemReadModel>> GetFixturesAsync(
         FixtureFilters filters,
         PaginationParams pagination,
         CancellationToken cancellationToken = default);
@@ -22,7 +23,7 @@ public interface IFixtureReadStore
     /// <summary>
     /// Queries nearby fixtures ordered by distance.
     /// </summary>
-    Task<PagedResult<NearbyFixtureListItemResponse>> GetNearbyFixturesAsync(
+    Task<PagedResult<NearbyFixtureListItemReadModel>> GetNearbyFixturesAsync(
         double latitude,
         double longitude,
         double radiusInMeters,
@@ -33,7 +34,7 @@ public interface IFixtureReadStore
     /// <summary>
     /// Gets fixture details by identifier.
     /// </summary>
-    Task<FixtureDetailsResponse?> GetFixtureDetailsAsync(
-        Guid fixtureId,
+    Task<FixtureDetailsReadModel?> GetFixtureDetailsAsync(
+        FixtureId fixtureId,
         CancellationToken cancellationToken = default);
 }

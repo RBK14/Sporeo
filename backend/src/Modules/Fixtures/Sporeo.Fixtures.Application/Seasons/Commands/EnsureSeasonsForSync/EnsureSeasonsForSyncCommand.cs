@@ -1,4 +1,6 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 
@@ -8,7 +10,7 @@ namespace Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 /// before fixture chunks reference them.
 /// </summary>
 internal sealed record EnsureSeasonsForSyncCommand(
-    Guid LeagueId,
+    LeagueId LeagueId,
     IReadOnlyList<string> SeasonNames,
     DateTimeOffset? NextFixtureDate,
-    string? NextFixtureSeasonName) : ICommand<IReadOnlyDictionary<string, Guid>>;
+    string? NextFixtureSeasonName) : ICommand<IReadOnlyDictionary<string, SeasonId>>;

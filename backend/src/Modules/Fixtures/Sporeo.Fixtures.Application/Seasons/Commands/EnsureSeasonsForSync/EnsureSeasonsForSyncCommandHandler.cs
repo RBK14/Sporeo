@@ -1,22 +1,21 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
-using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 
 internal sealed class EnsureSeasonsForSyncCommandHandler(
     ISeasonRepository seasonRepository)
-    : ICommandHandler<EnsureSeasonsForSyncCommand, IReadOnlyDictionary<string, Guid>>
+    : ICommandHandler<EnsureSeasonsForSyncCommand, IReadOnlyDictionary<string, SeasonId>>
 {
-    public async Task<Result<IReadOnlyDictionary<string, Guid>>> Handle(
+    public async Task<Result<IReadOnlyDictionary<string, SeasonId>>> Handle(
         EnsureSeasonsForSyncCommand request,
         CancellationToken cancellationToken)
     {
-        var leagueId = LeagueId.FromValue(request.LeagueId);
-        var existingSeasons = (await seasonRepository.GetByLeagueIdAsync(leagueId, cancellationToken)).ToList();
-        var seasonMap = existingSeasons.ToDictionary(season => season.Name, season => season.Id.Value);
+        var existingSeasons = (await seasonRepository.GetByLeagueIdAsync(request.LeagueId, cancellationToken)).ToList();
+        var seasonMap = existingSeasons.ToDictionary(season => season.Name, season => season.Id);
 
         var missingSeasonNames = request.SeasonNames
             .Where(name => !string.IsNullOrWhiteSpace(name))
@@ -25,14 +24,14 @@ internal sealed class EnsureSeasonsForSyncCommandHandler(
 
         foreach (var seasonName in missingSeasonNames)
         {
-            var createResult = Season.Create(leagueId, seasonName);
+            var createResult = Season.Create(request.LeagueId, seasonName);
             if (createResult.IsFailure)
-                return Result.Failure<IReadOnlyDictionary<string, Guid>>(createResult.Error);
+                return Result.Failure<IReadOnlyDictionary<string, SeasonId>>(createResult.Error);
 
             var newSeason = createResult.Value;
             seasonRepository.Add(newSeason);
             existingSeasons.Add(newSeason);
-            seasonMap[seasonName] = newSeason.Id.Value;
+            seasonMap[seasonName] = newSeason.Id;
         }
 
         if (request.NextFixtureDate.HasValue && !string.IsNullOrWhiteSpace(request.NextFixtureSeasonName))
@@ -50,6 +49,6 @@ internal sealed class EnsureSeasonsForSyncCommandHandler(
             }
         }
 
-        return Result.Success<IReadOnlyDictionary<string, Guid>>(seasonMap);
+        return Result.Success<IReadOnlyDictionary<string, SeasonId>>(seasonMap);
     }
 }

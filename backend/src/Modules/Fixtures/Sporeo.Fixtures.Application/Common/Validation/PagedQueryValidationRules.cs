@@ -30,16 +30,6 @@ internal static class PagedQueryValidationRules
         AbstractValidator<T> validator,
         Func<T, FixtureFilters> filtersSelector)
     {
-        validator.RuleFor(query => filtersSelector(query).SportId)
-            .Must(id => id is null || id != Guid.Empty)
-            .WithErrorCode("FixtureFilters.InvalidSportId")
-            .WithMessage("Sport ID cannot be empty.");
-
-        validator.RuleFor(query => filtersSelector(query).LeagueId)
-            .Must(id => id is null || id != Guid.Empty)
-            .WithErrorCode("FixtureFilters.InvalidLeagueId")
-            .WithMessage("League ID cannot be empty.");
-
         validator.RuleFor(query => filtersSelector(query))
             .Must(filters =>
                 filters.DateFrom is null

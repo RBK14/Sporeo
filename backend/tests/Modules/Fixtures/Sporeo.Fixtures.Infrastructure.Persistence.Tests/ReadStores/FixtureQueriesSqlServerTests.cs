@@ -10,6 +10,7 @@ using Sporeo.Fixtures.Application.Fixtures.Queries.GetNearbyFixtures;
 using Sporeo.Fixtures.Application.Venues.Queries.GetVenueDetails;
 using Sporeo.Fixtures.Domain.Common;
 using Sporeo.Fixtures.Domain.Fixtures;
+using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Sports;
@@ -39,30 +40,30 @@ public sealed class FixtureQueriesSqlServerTests
         all.IsSuccess.Should().BeTrue();
         all.Value.TotalCount.Should().Be(6);
         all.Value.Items.Select(item => item.Id).Should().Equal(
-            seed.FixtureWarsawLeague.Id.Value,
-            seed.FixtureSoftDeletedLeague.Id.Value,
-            seed.FixtureNoLocation.Id.Value,
-            seed.FixtureWarsawNoLeague.Id.Value,
-            seed.FixtureKrakow.Id.Value,
-            seed.FixtureWithoutVenue.Id.Value);
-        all.Value.Items.Should().NotContain(item => item.Id == seed.FixtureDeleted.Id.Value);
-        all.Value.Items.Should().NotContain(item => item.Id == seed.FixtureDeletedSport.Id.Value);
+            seed.FixtureWarsawLeague.Id,
+            seed.FixtureSoftDeletedLeague.Id,
+            seed.FixtureNoLocation.Id,
+            seed.FixtureWarsawNoLeague.Id,
+            seed.FixtureKrakow.Id,
+            seed.FixtureWithoutVenue.Id);
+        all.Value.Items.Should().NotContain(item => item.Id == seed.FixtureDeleted.Id);
+        all.Value.Items.Should().NotContain(item => item.Id == seed.FixtureDeletedSport.Id);
         all.Value.Items.Should().Contain(item =>
-            item.Id == seed.FixtureSoftDeletedLeague.Id.Value
+            item.Id == seed.FixtureSoftDeletedLeague.Id
             && item.LeagueName == null);
 
         var bySport = await sender.Send(new GetFixturesQuery(
             new PaginationParams(1, 10),
-            new FixtureFilters(SportId: seed.SportFootball.Id.Value)));
+            new FixtureFilters(SportId: seed.SportFootball.Id)));
 
         bySport.IsSuccess.Should().BeTrue();
         bySport.Value.TotalCount.Should().Be(5);
         bySport.Value.Items.Select(item => item.Id).Should().Equal(
-            seed.FixtureWarsawLeague.Id.Value,
-            seed.FixtureSoftDeletedLeague.Id.Value,
-            seed.FixtureNoLocation.Id.Value,
-            seed.FixtureWarsawNoLeague.Id.Value,
-            seed.FixtureWithoutVenue.Id.Value);
+            seed.FixtureWarsawLeague.Id,
+            seed.FixtureSoftDeletedLeague.Id,
+            seed.FixtureNoLocation.Id,
+            seed.FixtureWarsawNoLeague.Id,
+            seed.FixtureWithoutVenue.Id);
 
         var byLeague = await sender.Send(new GetFixturesQuery(
             new PaginationParams(1, 10),
@@ -70,7 +71,7 @@ public sealed class FixtureQueriesSqlServerTests
 
         byLeague.IsSuccess.Should().BeTrue();
         byLeague.Value.Items.Should().ContainSingle()
-            .Which.Id.Should().Be(seed.FixtureWarsawLeague.Id.Value);
+            .Which.Id.Should().Be(seed.FixtureWarsawLeague.Id);
 
         var byDate = await sender.Send(new GetFixturesQuery(
             new PaginationParams(1, 10),
@@ -80,7 +81,7 @@ public sealed class FixtureQueriesSqlServerTests
 
         byDate.IsSuccess.Should().BeTrue();
         byDate.Value.Items.Should().ContainSingle()
-            .Which.Id.Should().Be(seed.FixtureWarsawNoLeague.Id.Value);
+            .Which.Id.Should().Be(seed.FixtureWarsawNoLeague.Id);
 
         var page = await sender.Send(new GetFixturesQuery(
             new PaginationParams(2, 2),
@@ -91,8 +92,8 @@ public sealed class FixtureQueriesSqlServerTests
         page.Value.TotalCount.Should().Be(6);
         page.Value.HasNextPage.Should().BeTrue();
         page.Value.Items.Select(item => item.Id).Should().Equal(
-            seed.FixtureNoLocation.Id.Value,
-            seed.FixtureWarsawNoLeague.Id.Value);
+            seed.FixtureNoLocation.Id,
+            seed.FixtureWarsawNoLeague.Id);
 
         var lastPage = await sender.Send(new GetFixturesQuery(
             new PaginationParams(3, 2),
@@ -104,7 +105,7 @@ public sealed class FixtureQueriesSqlServerTests
 
         var deletedSportFixtures = await sender.Send(new GetFixturesQuery(
             new PaginationParams(1, 10),
-            new FixtureFilters(SportId: seed.SportDeleted.Id.Value)));
+            new FixtureFilters(SportId: seed.SportDeleted.Id)));
 
         deletedSportFixtures.IsSuccess.Should().BeTrue();
         deletedSportFixtures.Value.TotalCount.Should().Be(0);
@@ -117,7 +118,7 @@ public sealed class FixtureQueriesSqlServerTests
         var seed = await SeedAsync(provider);
         var sender = provider.GetRequiredService<ISender>();
 
-        var full = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureWarsawLeague.Id.Value));
+        var full = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureWarsawLeague.Id));
         full.IsSuccess.Should().BeTrue();
         full.Value.Venue.Should().NotBeNull();
         full.Value.Venue!.City.Should().Be("Warsaw");
@@ -125,29 +126,29 @@ public sealed class FixtureQueriesSqlServerTests
         full.Value.League.Should().NotBeNull();
         full.Value.Season.Should().NotBeNull();
 
-        var withoutLeague = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureWarsawNoLeague.Id.Value));
+        var withoutLeague = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureWarsawNoLeague.Id));
         withoutLeague.IsSuccess.Should().BeTrue();
         withoutLeague.Value.League.Should().BeNull();
         withoutLeague.Value.Season.Should().BeNull();
         withoutLeague.Value.Venue.Should().NotBeNull();
 
-        var withoutVenue = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureWithoutVenue.Id.Value));
+        var withoutVenue = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureWithoutVenue.Id));
         withoutVenue.IsSuccess.Should().BeTrue();
         withoutVenue.Value.Venue.Should().BeNull();
 
-        var softDeletedLeague = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureSoftDeletedLeague.Id.Value));
+        var softDeletedLeague = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureSoftDeletedLeague.Id));
         softDeletedLeague.IsSuccess.Should().BeTrue();
         softDeletedLeague.Value.League.Should().BeNull();
 
-        var deleted = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureDeleted.Id.Value));
+        var deleted = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureDeleted.Id));
         deleted.IsFailure.Should().BeTrue();
-        deleted.Error.Code.Should().Be(Errors.Fixture.NotFound(seed.FixtureDeleted.Id.Value).Code);
+        deleted.Error.Code.Should().Be(Errors.Fixture.NotFound(seed.FixtureDeleted.Id).Code);
 
-        var missing = await sender.Send(new GetFixtureDetailsQuery(Guid.NewGuid()));
+        var missing = await sender.Send(new GetFixtureDetailsQuery(FixtureId.FromValue(Guid.NewGuid())));
         missing.IsFailure.Should().BeTrue();
         missing.Error.Code.Should().Be("Fixture.NotFound");
 
-        var deletedSportFixture = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureDeletedSport.Id.Value));
+        var deletedSportFixture = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureDeletedSport.Id));
         deletedSportFixture.IsFailure.Should().BeTrue();
         deletedSportFixture.Error.Code.Should().Be("Fixture.NotFound");
     }
@@ -159,22 +160,22 @@ public sealed class FixtureQueriesSqlServerTests
         var seed = await SeedAsync(provider);
         var sender = provider.GetRequiredService<ISender>();
 
-        var warsaw = await sender.Send(new GetVenueDetailsQuery(seed.VenueWarsaw.Id.Value));
+        var warsaw = await sender.Send(new GetVenueDetailsQuery(seed.VenueWarsaw.Id));
         warsaw.IsSuccess.Should().BeTrue();
         warsaw.Value.Latitude.Should().BeApproximately(52.2297, 0.0001);
         warsaw.Value.Longitude.Should().BeApproximately(21.0122, 0.0001);
         warsaw.Value.City.Should().Be("Warsaw");
 
-        var withoutCoordinates = await sender.Send(new GetVenueDetailsQuery(seed.VenueWithoutCoordinates.Id.Value));
+        var withoutCoordinates = await sender.Send(new GetVenueDetailsQuery(seed.VenueWithoutCoordinates.Id));
         withoutCoordinates.IsSuccess.Should().BeTrue();
         withoutCoordinates.Value.Latitude.Should().BeNull();
         withoutCoordinates.Value.Longitude.Should().BeNull();
 
-        var deleted = await sender.Send(new GetVenueDetailsQuery(seed.VenueDeleted.Id.Value));
+        var deleted = await sender.Send(new GetVenueDetailsQuery(seed.VenueDeleted.Id));
         deleted.IsFailure.Should().BeTrue();
         deleted.Error.Code.Should().Be("Venue.NotFound");
 
-        var missing = await sender.Send(new GetVenueDetailsQuery(Guid.NewGuid()));
+        var missing = await sender.Send(new GetVenueDetailsQuery(VenueId.FromValue(Guid.NewGuid())));
         missing.IsFailure.Should().BeTrue();
         missing.Error.Code.Should().Be("Venue.NotFound");
     }
@@ -197,9 +198,9 @@ public sealed class FixtureQueriesSqlServerTests
         nearbyWarsaw.Value.TotalCount.Should().Be(3);
         nearbyWarsaw.Value.Items.Select(item => item.Id).Should().BeEquivalentTo(
         [
-            seed.FixtureWarsawLeague.Id.Value,
-            seed.FixtureSoftDeletedLeague.Id.Value,
-            seed.FixtureWarsawNoLeague.Id.Value
+            seed.FixtureWarsawLeague.Id,
+            seed.FixtureSoftDeletedLeague.Id,
+            seed.FixtureWarsawNoLeague.Id
         ]);
         nearbyWarsaw.Value.Items.Should().OnlyContain(item => item.DistanceInMeters >= 0);
         nearbyWarsaw.Value.Items.Should().BeInAscendingOrder(item => item.DistanceInMeters);
@@ -214,25 +215,25 @@ public sealed class FixtureQueriesSqlServerTests
         wider.IsSuccess.Should().BeTrue();
         wider.Value.Items.Select(item => item.Id).Should().BeEquivalentTo(
         [
-            seed.FixtureWarsawLeague.Id.Value,
-            seed.FixtureSoftDeletedLeague.Id.Value,
-            seed.FixtureWarsawNoLeague.Id.Value,
-            seed.FixtureKrakow.Id.Value
+            seed.FixtureWarsawLeague.Id,
+            seed.FixtureSoftDeletedLeague.Id,
+            seed.FixtureWarsawNoLeague.Id,
+            seed.FixtureKrakow.Id
         ]);
-        wider.Value.Items.Should().NotContain(item => item.Id == seed.FixtureWithoutVenue.Id.Value);
-        wider.Value.Items.Should().NotContain(item => item.Id == seed.FixtureNoLocation.Id.Value);
-        wider.Value.Items.Should().NotContain(item => item.Id == seed.FixtureDeleted.Id.Value);
+        wider.Value.Items.Should().NotContain(item => item.Id == seed.FixtureWithoutVenue.Id);
+        wider.Value.Items.Should().NotContain(item => item.Id == seed.FixtureNoLocation.Id);
+        wider.Value.Items.Should().NotContain(item => item.Id == seed.FixtureDeleted.Id);
 
         var basketballOnly = await sender.Send(new GetNearbyFixturesQuery(
             Latitude: 52.2297,
             Longitude: 21.0122,
             RadiusInMeters: 500_000,
             Pagination: new PaginationParams(1, 10),
-            Filters: new FixtureFilters(SportId: seed.SportBasketball.Id.Value)));
+            Filters: new FixtureFilters(SportId: seed.SportBasketball.Id)));
 
         basketballOnly.IsSuccess.Should().BeTrue();
         basketballOnly.Value.Items.Should().ContainSingle()
-            .Which.Id.Should().Be(seed.FixtureKrakow.Id.Value);
+            .Which.Id.Should().Be(seed.FixtureKrakow.Id);
     }
 
     private static async Task<SeedData> SeedAsync(ServiceProvider provider)

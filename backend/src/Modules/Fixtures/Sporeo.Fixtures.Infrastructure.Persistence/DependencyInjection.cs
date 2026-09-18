@@ -7,17 +7,23 @@ using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
+using Sporeo.BuildingBlocks.Infrastructure.Persistence.Dapper;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Application.Abstractions.Persistence;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadStores;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
 using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Venues.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Venues.Abstractions.ReadStores;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
+using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 using Sporeo.Fixtures.Domain.Venues.Events;
+using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Persistence.Caching;
 using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
 using Sporeo.Fixtures.Infrastructure.Persistence.Context;
@@ -25,7 +31,7 @@ using Sporeo.Fixtures.Infrastructure.Persistence.Exceptions;
 using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
 using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
-using Sporeo.Fixtures.Infrastructure.Persistence.ReadModels;
+using Sporeo.Fixtures.Infrastructure.Persistence.ReadStores;
 using Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
 using Sporeo.Fixtures.Infrastructure.Persistence.Seeding;
 
@@ -45,6 +51,12 @@ public static class DependencyInjection
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddFixturesDatabase(this IServiceCollection services, IConfiguration configuration)
     {
+        TypedIdTypeHandlerRegistration.Register(FixtureId.FromValue);
+        TypedIdTypeHandlerRegistration.Register(VenueId.FromValue);
+        TypedIdTypeHandlerRegistration.Register(SportId.FromValue);
+        TypedIdTypeHandlerRegistration.Register(LeagueId.FromValue);
+        TypedIdTypeHandlerRegistration.Register(SeasonId.FromValue);
+
         services.AddSingleton<AuditableEntityInterceptor>();
         services.AddSingleton<VenueLocationInterceptor>();
         services.AddSingleton<IDomainEventTypeRegistry>(_ => new DomainEventTypeRegistry(

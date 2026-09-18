@@ -1,7 +1,7 @@
 using Dapper;
 using Sporeo.Fixtures.Application.Fixtures.Queries.Common;
 
-namespace Sporeo.Fixtures.Infrastructure.Persistence.ReadModels;
+namespace Sporeo.Fixtures.Infrastructure.Persistence.ReadStores;
 
 internal static class FixtureFilterSql
 {
@@ -10,16 +10,16 @@ internal static class FixtureFilterSql
         DynamicParameters parameters,
         FixtureFilters filters)
     {
-        if (filters.SportId.HasValue)
+        if (filters.SportId is not null)
         {
             whereClauses.Add("f.SportId = @SportId");
-            parameters.Add("SportId", filters.SportId.Value);
+            parameters.Add("SportId", filters.SportId);
         }
 
-        if (filters.LeagueId.HasValue)
+        if (filters.LeagueId is not null)
         {
             whereClauses.Add("f.LeagueId = @LeagueId");
-            parameters.Add("LeagueId", filters.LeagueId.Value);
+            parameters.Add("LeagueId", filters.LeagueId);
         }
 
         if (filters.DateFrom.HasValue)
