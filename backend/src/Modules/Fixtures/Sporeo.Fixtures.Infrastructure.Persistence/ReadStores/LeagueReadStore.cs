@@ -91,4 +91,21 @@ internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactor
 
         return result.ToList();
     }
+
+    public async Task<LeagueExternalProviderDataReadModel?> GetLeagueExternalProviderDataAsync(LeagueId leagueId, CancellationToken cancellationToken = default)
+    {
+        using var connection = sqlConnectionFactory.CreateConnection();
+
+        const string sql = """
+        SELECT 
+            l.ExternalProviderName,
+            l.ExternalProviderId
+        FROM Leagues l
+        WHERE l.Id = @LeagueId
+          AND l.IsDeleted = 0
+        """;
+
+        return await connection.QueryFirstOrDefaultAsync<LeagueExternalProviderDataReadModel>(
+            new CommandDefinition(sql, new { LeagueId = leagueId }, cancellationToken: cancellationToken));
+    }
 }

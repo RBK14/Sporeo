@@ -12,7 +12,7 @@ public sealed class GeocodingRateLimiterTests
     public async Task WaitAsync_EnforcesMinimumOneSecondBetweenAcquisitions()
     {
         var timeProvider = new FakeTimeProvider(DateTimeOffset.UtcNow);
-        using var limiter = new GeocodingRateLimiter(
+        using var limiter = new NominatimRateLimiter(
             Options.Create(new NominatimOptions
             {
                 MinRequestInterval = TimeSpan.FromSeconds(1),

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
+namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 
 internal sealed record NominatimResponse(
     [property: JsonPropertyName("lat")] string? Latitude,

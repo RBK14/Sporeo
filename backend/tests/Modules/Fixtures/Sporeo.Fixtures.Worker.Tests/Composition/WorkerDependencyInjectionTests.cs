@@ -11,7 +11,7 @@ using Sporeo.Fixtures.Application;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Infrastructure.Integration;
-using Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
+using Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 using Sporeo.Fixtures.Infrastructure.Persistence;
 using Sporeo.Fixtures.Worker;
 using Sporeo.Fixtures.Worker.Configuration;

@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
 
-namespace Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
+namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 
 /// <summary>
 /// Process-wide rate limiter for geocoding requests.
@@ -18,14 +18,14 @@ public interface IGeocodingRateLimiter
 /// <summary>
 /// Serializes outbound Nominatim calls and enforces a minimum interval between HTTP attempts.
 /// </summary>
-internal sealed class GeocodingRateLimiter : IGeocodingRateLimiter, IDisposable
+internal sealed class NominatimRateLimiter : IGeocodingRateLimiter, IDisposable
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _minInterval;
     private long _nextAllowedTimestamp;
 
-    public GeocodingRateLimiter(IOptions<NominatimOptions> options, TimeProvider timeProvider)
+    public NominatimRateLimiter(IOptions<NominatimOptions> options, TimeProvider timeProvider)
     {
         _timeProvider = timeProvider;
         var configured = options.Value.MinRequestInterval;

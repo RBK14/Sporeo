@@ -10,7 +10,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 
-namespace Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
+namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 
 /// <summary>
 /// Nominatim-backed geocoding service with Redis caching and process-wide rate limiting.

@@ -6,12 +6,12 @@ using Polly.Timeout;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
-using Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
 using Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Threading.RateLimiting;
 using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
+using Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration;
 
@@ -77,7 +77,7 @@ public static class DependencyInjection
             });
         });
 
-        services.AddTransient<TheSportsDbRateLimitingHandler>();
+        services.AddTransient<TheSportsDbRateLimiter>();
         services.AddTransient<TheSportsDbApiKeyHandler>();
 
         services.AddHttpClient<TheSportsDbClient>((sp, client) =>
@@ -91,7 +91,7 @@ public static class DependencyInjection
                 client.Timeout = Timeout.InfiniteTimeSpan;
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             })
-            .AddHttpMessageHandler<TheSportsDbRateLimitingHandler>()
+            .AddHttpMessageHandler<TheSportsDbRateLimiter>()
             .AddHttpMessageHandler<TheSportsDbApiKeyHandler>()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
@@ -169,7 +169,7 @@ public static class DependencyInjection
                 "ExternalProviders:Nominatim cache TTLs must be greater than zero.")
             .ValidateOnStart();
 
-        services.AddSingleton<IGeocodingRateLimiter, GeocodingRateLimiter>();
+        services.AddSingleton<IGeocodingRateLimiter, NominatimRateLimiter>();
 
         services.AddHttpClient<IGeocodingService, NominatimGeocodingService>((sp, client) =>
             {

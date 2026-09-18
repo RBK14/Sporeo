@@ -35,4 +35,6 @@ public interface ILeagueReadStore
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>A list of leagues with current seasons.</returns>
     Task<IReadOnlyList<LeagueWithCurrentSeasonReadModel>> GetMonitoredLeaguesWithCurrentSeasonAsync(CancellationToken cancellationToken = default);
+
+    Task<LeagueExternalProviderDataReadModel?> GetLeagueExternalProviderDataAsync(LeagueId leagueId, CancellationToken cancellationToken = default);
 }

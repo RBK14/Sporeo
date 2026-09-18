@@ -19,6 +19,7 @@ using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Venues.Abstractions.ReadStores;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
+using Sporeo.Fixtures.Domain.Leagues.Events;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
@@ -63,7 +64,12 @@ public static class DependencyInjection
         [
             new KeyValuePair<string, Type>(
                 FixturesOutboxTypeKeys.VenueCreatedDomainEvent,
-                typeof(VenueCreatedDomainEvent))
+                typeof(VenueCreatedDomainEvent)),
+
+            new KeyValuePair<string, Type>(
+                FixturesOutboxTypeKeys.LeagueMonitoringEnabledDomainEvent,
+                typeof(LeagueMonitoringEnabledDomainEvent))
+
         ]));
         services.AddScoped<FixturesDatabaseSeeder>();
         services.AddSqlServer(configuration);

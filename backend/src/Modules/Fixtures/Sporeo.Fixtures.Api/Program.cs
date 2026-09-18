@@ -1,6 +1,7 @@
 using MediatR;
 using Sporeo.BuildingBlocks.Application.Pagination;
 using Sporeo.Fixtures.Application;
+using Sporeo.Fixtures.Application.Catalogs.Commands.UpdateMonitoring;
 using Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 using Sporeo.Fixtures.Infrastructure.Integration;
 using Sporeo.Fixtures.Infrastructure.Persistence;
@@ -35,6 +36,37 @@ app.MapGet("/catalog", async (ISender sender) =>
     }
 
     return Results.Ok(result.Value);
+});
+
+app.MapGet("/monitoring", async (ISender sender) =>
+{
+    var sports = new List<UpdateMonitoringSportDto>
+    {
+        new UpdateMonitoringSportDto(
+            ProviderId: "102",
+            ProviderName: "TheSportsDB",
+            Leagues: new List<UpdateMonitoringLeagueDto>
+            {
+                new UpdateMonitoringLeagueDto(
+                    ProviderId: "4330",
+                    ProviderName: "TheSportsDB",
+                    IsMonitored: true
+                )
+            }
+        )
+    };
+
+var result = await sender.Send(new UpdateMonitoringCommand(sports));
+    if (result.IsFailure)
+    {
+        return Results.BadRequest(new
+        {
+            error = result.Error.Code,
+            message = result.Error.Message
+        });
+    }
+
+    return Results.Ok();
 });
 
 app.Run();
