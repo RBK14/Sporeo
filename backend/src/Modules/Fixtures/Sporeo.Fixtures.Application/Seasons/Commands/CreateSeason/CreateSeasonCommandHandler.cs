@@ -1,4 +1,3 @@
-using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
@@ -14,11 +13,9 @@ internal sealed class CreateSeasonCommandHandler(
     {
         var leagueId = LeagueId.FromValue(request.LeagueId);
 
-        var seasonResult = Season.CreateManually(
+        var seasonResult = Season.Create(
             leagueId,
-            request.Name,
-            request.StartDate,
-            request.EndDate);
+            request.Name);
 
         if (seasonResult.IsFailure)
             return Result.Failure<Guid>(seasonResult.Error);
