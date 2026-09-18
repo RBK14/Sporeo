@@ -1,7 +1,7 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Application.Pagination;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadStores;
+using Sporeo.Fixtures.Application.Fixtures.Data;
 
 namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtures;
 

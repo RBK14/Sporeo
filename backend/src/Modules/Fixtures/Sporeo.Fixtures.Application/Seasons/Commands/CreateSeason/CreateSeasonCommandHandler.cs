@@ -1,6 +1,6 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Seasons.Data;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 

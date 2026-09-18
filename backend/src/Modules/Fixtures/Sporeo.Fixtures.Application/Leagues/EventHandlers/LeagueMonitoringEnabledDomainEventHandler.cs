@@ -1,9 +1,9 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Messaging.DomainEvents;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
+using Sporeo.Fixtures.Application.Leagues.Data;
 using Sporeo.Fixtures.Domain.Leagues.Events;
 
 namespace Sporeo.Fixtures.Application.Leagues.EventHandlers;

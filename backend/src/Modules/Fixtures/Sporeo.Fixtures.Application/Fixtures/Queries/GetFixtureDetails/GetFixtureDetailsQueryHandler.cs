@@ -1,6 +1,6 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadStores;
+using Sporeo.Fixtures.Application.Fixtures.Data;
 using Sporeo.Fixtures.Domain.Common;
 
 namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtureDetails;

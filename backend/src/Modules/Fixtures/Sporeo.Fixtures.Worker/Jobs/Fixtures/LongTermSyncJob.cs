@@ -1,8 +1,8 @@
-﻿using MediatR;
+using MediatR;
 using Quartz;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
+using Sporeo.Fixtures.Application.Leagues.Data;
 
 namespace Sporeo.Fixtures.Worker.Jobs.Fixtures;
 

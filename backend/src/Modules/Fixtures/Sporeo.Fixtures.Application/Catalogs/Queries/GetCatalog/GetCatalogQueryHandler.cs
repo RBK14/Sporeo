@@ -2,9 +2,9 @@ using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Application.Pagination;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Catalogs.Abstractions;
 using Sporeo.Fixtures.Application.Catalogs.Common;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
+using Sporeo.Fixtures.Application.Leagues.Data;
 
 namespace Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 

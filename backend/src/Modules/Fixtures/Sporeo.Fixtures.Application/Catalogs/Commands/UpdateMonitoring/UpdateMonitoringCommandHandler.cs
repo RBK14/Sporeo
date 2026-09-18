@@ -1,10 +1,10 @@
-ï»¿using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
+using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Catalogs.Abstractions;
 using Sporeo.Fixtures.Application.Catalogs.Common;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Leagues.Data;
+using Sporeo.Fixtures.Application.Sports.Data;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Sports;
 
@@ -18,7 +18,7 @@ internal sealed class UpdateMonitoringCommandHandler(
     ILeagueRepository leagueRepository,
     ICacheService cacheService) : ICommandHandler<UpdateMonitoringCommand>
 {
-    // todo: ZmieniÄ‡ handler tak, Å¼eby aktualizowaÅ‚o IsMonitored po LeagueId a nie ProviderId
+    // todo: Zmieniæ handler tak, ¿eby aktualizowa³o IsMonitored po LeagueId a nie ProviderId
 
     /// <inheritdoc />
     public async Task<Result> Handle(UpdateMonitoringCommand request, CancellationToken cancellationToken)

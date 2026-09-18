@@ -3,14 +3,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Timeout;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Venues.Abstractions;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
 using Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Threading.RateLimiting;
-using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Catalogs.Abstractions;
 using Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration;
@@ -79,8 +79,9 @@ public static class DependencyInjection
 
         services.AddTransient<TheSportsDbRateLimiter>();
         services.AddTransient<TheSportsDbApiKeyHandler>();
+        services.AddSingleton<TheSportsDbFixtureMapper>();
 
-        services.AddHttpClient<TheSportsDbClient>((sp, client) =>
+        services.AddHttpClient<TheSportsDbApi>((sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<TheSportsDbOptions>>().Value;
                 var baseUrl = options.BaseUrl.TrimEnd('/') + "/";
@@ -127,9 +128,9 @@ public static class DependencyInjection
                 options.AttemptTimeout.Timeout = AttemptTimeout;
             });
 
-        // Resolve interfaces through the typed HttpClient registration so BaseAddress
-        // and TheSportsDbApiKeyHandler are applied. A plain AddTransient would inject
-        // an unconfigured HttpClient and fail on relative URIs with InvalidOperationException.
+        // Typed HttpClient is TheSportsDbApi; the facade resolves through it so BaseAddress
+        // and TheSportsDbApiKeyHandler are applied.
+        services.AddTransient<TheSportsDbClient>();
         services.AddTransient<IExternalFixturesClient>(sp => sp.GetRequiredService<TheSportsDbClient>());
         services.AddTransient<IExternalCatalogClient>(sp => sp.GetRequiredService<TheSportsDbClient>());
 

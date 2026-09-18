@@ -1,40 +1,23 @@
-using System.Globalization;
-using System.Net;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Catalogs.Abstractions.Providers;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
-using Sporeo.Fixtures.Domain.Fixtures.Enums;
+using Sporeo.Fixtures.Application.Catalogs.Abstractions;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Infrastructure.Integration.Observability;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 
 /// <summary>
-/// TheSportsDB HTTP client that maps provider payloads to application DTOs.
+/// TheSportsDB client facade that maps provider payloads to application DTOs.
 /// </summary>
 /// <remarks>
 /// Thread-safe when resolved through <c>IHttpClientFactory</c>. Concurrent requests are supported,
 /// but caller-level concurrency should remain bounded to avoid provider rate limits.
 /// </remarks>
 internal sealed class TheSportsDbClient(
-    HttpClient httpClient,
+    TheSportsDbApi api,
+    TheSportsDbFixtureMapper fixtureMapper,
     ILogger<TheSportsDbClient> logger) : IExternalFixturesClient, IExternalCatalogClient
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
-    private static readonly Error Unauthorized = new("ExternalFixtures.Unauthorized", "Provider rejected the API credentials.");
-    private static readonly Error RateLimited = new("ExternalFixtures.RateLimited", "Provider rate limit was exceeded.");
-    private static readonly Error Transient = new("ExternalFixtures.Transient", "Provider returned a transient failure.");
-    private static readonly Error Permanent = new("ExternalFixtures.Permanent", "Provider returned a permanent failure.");
-    private static readonly Error InvalidPayload = new("ExternalFixtures.InvalidPayload", "Provider returned an invalid payload.");
-
-    private const string DropReasonMissingId = "missing_id";
-    private const string DropReasonInvalidDate = "invalid_date";
-
     /// <inheritdoc />
     public string ProviderName => "TheSportsDB";
 
@@ -75,6 +58,7 @@ internal sealed class TheSportsDbClient(
             return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
                 new Error("ExternalFixtures.MissingSeasonId", "Long term sync requires ExternalSeasonId."));
         }
+
         logger.LogInformation("Running long term sync (season {SeasonId}) for league {LeagueId}.", seasonName, externalLeagueId);
         return await FetchAndMapFixturesAsync("eventsseason.php", externalLeagueId, seasonName, cancellationToken);
     }
@@ -82,7 +66,7 @@ internal sealed class TheSportsDbClient(
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<ExternalSportDto>>> FetchSportsAsync(CancellationToken cancellationToken = default)
     {
-        var apiResult = await FetchFromApiAsync<TheSportsDbSportsResponse>("all_sports.php", cancellationToken);
+        var apiResult = await api.FetchAsync<TheSportsDbSportsResponse>("all_sports.php", cancellationToken);
 
         if (apiResult.IsFailure)
             return Result.Failure<IReadOnlyList<ExternalSportDto>>(apiResult.Error);
@@ -104,7 +88,7 @@ internal sealed class TheSportsDbClient(
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<ExternalLeagueDto>>> FetchLeaguesAsync(CancellationToken cancellationToken = default)
     {
-        var apiResult = await FetchFromApiAsync<TheSportsDbLeaguesResponse>("all_leagues.php", cancellationToken);
+        var apiResult = await api.FetchAsync<TheSportsDbLeaguesResponse>("all_leagues.php", cancellationToken);
 
         if (apiResult.IsFailure)
             return Result.Failure<IReadOnlyList<ExternalLeagueDto>>(apiResult.Error);
@@ -143,13 +127,12 @@ internal sealed class TheSportsDbClient(
 
         var requestUri = QueryHelpers.AddQueryString(relativePath, query);
 
-        var apiResult = await FetchFromApiAsync<TheSportsDbResponse>(requestUri, cancellationToken);
+        var apiResult = await api.FetchAsync<TheSportsDbEventsResponse>(requestUri, cancellationToken);
         if (apiResult.IsFailure)
             return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(apiResult.Error);
 
         var data = apiResult.Value;
 
-        // Empty provider responses are treated as a successful no-op — never as a signal to clear local data.
         if (data?.Events is null || data.Events.Length == 0)
             return Result.Success<IReadOnlyList<ExternalFixtureDto>>([]);
 
@@ -158,7 +141,7 @@ internal sealed class TheSportsDbClient(
 
         foreach (var apiEvent in data.Events)
         {
-            var mapResult = MapToDto(apiEvent, relativePath);
+            var mapResult = fixtureMapper.MapToDto(apiEvent, relativePath);
             if (mapResult.Dto is null)
             {
                 dropped++;
@@ -187,209 +170,10 @@ internal sealed class TheSportsDbClient(
                 relativePath);
         }
 
-        // All events present but every one failed validation/parsing — surface as InvalidPayload.
         if (mapped.Count == 0)
-            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(InvalidPayload);
+            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(TheSportsDbApi.InvalidPayload);
 
         return Result.Success<IReadOnlyList<ExternalFixtureDto>>(mapped);
-    }
-
-    private async Task<Result<T>> FetchFromApiAsync<T>(string requestUri, CancellationToken cancellationToken)
-    {
-        try
-        {
-            using var response = await httpClient.GetAsync(
-                requestUri,
-                HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken);
-
-            if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-                return Result.Failure<T>(Unauthorized);
-
-            if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                return Result.Failure<T>(RateLimited);
-
-            if ((int)response.StatusCode >= 500)
-                return Result.Failure<T>(Transient);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                logger.LogWarning(
-                    "TheSportsDb API error: {Path} returned status {StatusCode}",
-                    requestUri,
-                    (int)response.StatusCode);
-                return Result.Failure<T>(Permanent);
-            }
-
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            var data = await JsonSerializer.DeserializeAsync<T>(stream, JsonOptions, cancellationToken);
-
-            if (data is null)
-                return Result.Failure<T>(InvalidPayload);
-
-            return Result.Success(data);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (HttpRequestException ex)
-        {
-            logger.LogError("Transient HTTP failure while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
-            return Result.Failure<T>(Transient);
-        }
-        catch (JsonException ex)
-        {
-            logger.LogError("Invalid JSON payload while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
-            return Result.Failure<T>(InvalidPayload);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.LogError("Unexpected error while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
-            return Result.Failure<T>(Permanent);
-        }
-    }
-
-    private MapResult MapToDto(TheSportsDbEvent apiEvent, string relativePath)
-    {
-        if (string.IsNullOrWhiteSpace(apiEvent.IdEvent))
-            return MapResult.Dropped(DropReasonMissingId);
-
-        if (!TryParseStartDate(apiEvent.StrTimestamp, apiEvent.DateEvent, apiEvent.StrTime, out var startDate))
-            return MapResult.Dropped(DropReasonInvalidDate);
-
-        ExternalFixtureVenueDto? venueDto = null;
-        if (!string.IsNullOrWhiteSpace(apiEvent.StrVenue))
-        {
-            var venueProviderId = string.IsNullOrWhiteSpace(apiEvent.IdVenue)
-                ? $"fallback-{apiEvent.StrVenue.Trim().Replace(" ", "-").ToLowerInvariant()}"
-                : apiEvent.IdVenue;
-
-            var country = string.IsNullOrWhiteSpace(apiEvent.StrCountry) ? null : apiEvent.StrCountry.Trim();
-
-            venueDto = new ExternalFixtureVenueDto(
-                ExternalId: venueProviderId,
-                ProviderName: ProviderName,
-                Name: apiEvent.StrVenue,
-                Street: null,
-                City: null,
-                Country: country,
-                Latitude: null,
-                Longitude: null);
-        }
-
-        return MapResult.Mapped(new ExternalFixtureDto(
-            ExternalId: apiEvent.IdEvent,
-            ProviderName: ProviderName,
-            Name: string.IsNullOrWhiteSpace(apiEvent.StrEvent) ? "Unknown Match" : apiEvent.StrEvent,
-            SeasonName: string.IsNullOrWhiteSpace(apiEvent.StrSeason) ? "Unknown Season" : apiEvent.StrSeason,
-            StartDate: startDate,
-            Status: MapFixtureStatus(apiEvent.StrStatus, apiEvent.IdEvent, relativePath),
-            Venue: venueDto));
-    }
-
-    /// <summary>
-    /// Parses fixture start time preferring <paramref name="strTimestamp"/>, falling back to
-    /// <paramref name="dateEvent"/> + <paramref name="strTime"/>. Results are normalized to UTC.
-    /// </summary>
-    private static bool TryParseStartDate(
-        string? strTimestamp,
-        string? dateEvent,
-        string? strTime,
-        out DateTimeOffset startDate)
-    {
-        if (!string.IsNullOrWhiteSpace(strTimestamp) &&
-            TryParseAsUtc(strTimestamp.Trim(), out startDate))
-        {
-            return true;
-        }
-
-        if (!string.IsNullOrWhiteSpace(dateEvent) &&
-            !string.IsNullOrWhiteSpace(strTime))
-        {
-            var raw = $"{dateEvent.Trim()} {strTime.Trim()}";
-            if (TryParseAsUtc(raw, out startDate))
-                return true;
-        }
-
-        startDate = default;
-        return false;
-    }
-
-    private static bool TryParseAsUtc(string value, out DateTimeOffset startDate)
-    {
-        if (DateTimeOffset.TryParse(
-                value,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                out startDate))
-        {
-            return true;
-        }
-
-        // Exact common TheSportsDB formats when culture-aware parse fails.
-        string[] formats =
-        [
-            "yyyy-MM-dd'T'HH:mm:ss",
-            "yyyy-MM-dd'T'HH:mm:ssK",
-            "yyyy-MM-dd'T'HH:mm:ss.FFFFFFFK",
-            "yyyy-MM-dd HH:mm:ss",
-            "yyyy-MM-dd HH:mm"
-        ];
-
-        if (DateTimeOffset.TryParseExact(
-                value,
-                formats,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                out startDate))
-        {
-            return true;
-        }
-
-        startDate = default;
-        return false;
-    }
-
-    private FixtureStatus MapFixtureStatus(string? apiStatus, string eventId, string relativePath)
-    {
-        switch (apiStatus)
-        {
-            case "FT":
-            case "AET":
-            case "PEN":
-                return FixtureStatus.Finished;
-
-            case "NS":
-                return FixtureStatus.Scheduled;
-
-            case "PST":
-            case "POST":
-                return FixtureStatus.Postponed;
-
-            case "CANC":
-            case "ABD":
-                return FixtureStatus.Cancelled;
-
-            default:
-                FixturesIntegrationMetrics.UnknownStatuses.Add(
-                    1,
-                    new KeyValuePair<string, object?>("provider", ProviderName));
-
-                logger.LogWarning(
-                    "Unknown TheSportsDb status '{ApiStatus}' for event {EventId} on {Path}; defaulting to Scheduled.",
-                    apiStatus ?? "(null)",
-                    eventId,
-                    relativePath);
-
-                return FixtureStatus.Scheduled;
-        }
-    }
-
-    private readonly record struct MapResult(ExternalFixtureDto? Dto, string? DropReason)
-    {
-        public static MapResult Mapped(ExternalFixtureDto dto) => new(dto, null);
-        public static MapResult Dropped(string reason) => new(null, reason);
     }
 }
 

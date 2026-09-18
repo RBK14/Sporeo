@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Sports;
-using Sporeo.Fixtures.Infrastructure.Persistence.Context;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Seeding;
 

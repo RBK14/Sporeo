@@ -229,11 +229,6 @@ public static class Errors
         public static readonly Error EmptyProviderId = new("Season.EmptyProviderId", "External provider ID is required.");
 
         /// <summary>
-        /// Returned when a season start date is not before its end date.
-        /// </summary>
-        public static readonly Error InvalidDateRange = new("Season.InvalidDateRange", "Season start date must be before end date.");
-
-        /// <summary>
         /// Returned when an operation targets a soft-deleted season.
         /// </summary>
         public static readonly Error Deleted = new("Season.Deleted", "Cannot modify a deleted season.");

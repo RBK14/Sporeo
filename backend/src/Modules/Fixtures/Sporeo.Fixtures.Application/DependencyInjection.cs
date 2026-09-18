@@ -22,7 +22,8 @@ public static class DependencyInjection
             configuration.AddOpenBehavior(typeof(LoggingBehavior<,>));
             configuration.AddOpenBehavior(typeof(ValidationBehavior<,>));
             configuration.AddOpenBehavior(typeof(PerformanceBehavior<,>));
-            configuration.AddOpenBehavior(typeof(QueryCachingBehavior<,>));
+            // QueryCachingBehavior is kept in BuildingBlocks but disabled until a query implements ICachedQuery.
+            // configuration.AddOpenBehavior(typeof(QueryCachingBehavior<,>));
             configuration.AddOpenBehavior(typeof(CommitBehavior<,>));
         });
 

@@ -1,7 +1,7 @@
 using MediatR;
 using Quartz;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 using Sporeo.Fixtures.Worker.Observability;
 

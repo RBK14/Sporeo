@@ -1,7 +1,7 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Venues.Abstractions;
+using Sporeo.Fixtures.Application.Venues.Data;
 
 namespace Sporeo.Fixtures.Application.Venues.Commands.EnrichVenueLocation;
 
