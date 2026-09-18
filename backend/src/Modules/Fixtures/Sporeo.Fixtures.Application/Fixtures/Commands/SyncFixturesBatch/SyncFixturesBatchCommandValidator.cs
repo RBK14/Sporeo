@@ -10,21 +10,13 @@ internal sealed class SyncFixturesBatchCommandValidator : AbstractValidator<Sync
 {
     public SyncFixturesBatchCommandValidator()
     {
-        RuleFor(command => command.SportId)
-            .NotEmpty()
-            .WithErrorCode("SyncFixtures.InvalidSportId");
-
-        RuleFor(command => command.LeagueId)
-            .Must(id => id is null || id != Guid.Empty)
-            .WithErrorCode("SyncFixtures.InvalidLeagueId");
-
-        RuleFor(command => command.SeasonId)
-            .Must(id => id is null || id != Guid.Empty)
-            .WithErrorCode("SyncFixtures.InvalidSeasonId");
-
         RuleFor(command => command.ProviderName)
             .NotEmpty()
             .WithErrorCode("SyncFixtures.InvalidProviderName");
+
+        RuleFor(command => command.ExternalLeagueId)
+            .NotEmpty()
+            .WithErrorCode("SyncFixtures.InvalidExternalLeagueId");
 
         RuleFor(command => command.Fixtures)
             .NotNull()

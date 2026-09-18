@@ -39,12 +39,6 @@ internal class SeasonConfiguration : IEntityTypeConfiguration<Season>
             .HasMaxLength(100)
             .IsRequired();
 
-        builder.Property(x => x.StartDate)
-            .IsRequired();
-
-        builder.Property(x => x.EndDate)
-            .IsRequired();
-
         builder.Property(x => x.IsCurrent)
             .IsRequired();
 
@@ -58,9 +52,6 @@ internal class SeasonConfiguration : IEntityTypeConfiguration<Season>
             .IsUnique()
             .HasFilter("[ExternalProviderName] IS NOT NULL AND [ExternalProviderId] IS NOT NULL AND [IsDeleted] = 0")
             .HasDatabaseName("IX_seasons_ExternalProvider");
-
-        builder.Property(x => x.IsManuallyEdited)
-            .IsRequired();
 
         builder.HasIndex(x => x.LeagueId)
             .IsUnique()

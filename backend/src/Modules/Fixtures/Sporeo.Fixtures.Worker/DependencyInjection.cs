@@ -22,10 +22,10 @@ public static class DependencyInjection
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddWorkerConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IValidateOptions<SyncJobsRootOptions>, SyncJobsRootOptionsValidator>();
+        services.AddSingleton<IValidateOptions<WorkerOptions>, WorkerOptionsValidator>();
 
-        services.AddOptions<SyncJobsRootOptions>()
-            .Bind(configuration.GetSection(SyncJobsRootOptions.SectionName))
+        services.AddOptions<WorkerOptions>()
+            .Bind(configuration.GetSection(WorkerOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
@@ -34,7 +34,7 @@ public static class DependencyInjection
 
     /// <summary>
     /// Registers Quartz with a persistent SQL Server store, clustering, outbox processing,
-    /// and one durable sync job/trigger per configured <see cref="SyncJobOptions"/>.
+    /// and one durable sync job/trigger per configured <see cref="WorkerOptions"/>.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -44,10 +44,8 @@ public static class DependencyInjection
         var quartzConnectionString = configuration.GetConnectionString("quartz-db")
             ?? throw new InvalidOperationException("Connection string 'quartz-db' was not found.");
 
-        var syncJobs = configuration
-            .GetSection(SyncJobsRootOptions.SectionName)
-            .Get<SyncJobsRootOptions>()
-            ?? new SyncJobsRootOptions();
+        var workerOptions = configuration.GetSection(WorkerOptions.SectionName).Get<WorkerOptions>()
+                            ?? new WorkerOptions();
 
         services.AddQuartz(q =>
         {
@@ -64,36 +62,29 @@ public static class DependencyInjection
                 });
             });
 
-            foreach (var jobOptions in syncJobs.Jobs)
-            {
-                var jobKey = new JobKey(jobOptions.JobId, SyncJobsGroup);
+            var dispatcherJobKey = new JobKey(nameof(SyncDispatcherJob), SyncJobsGroup);
+            q.AddJob<SyncDispatcherJob>(opts => opts.WithIdentity(dispatcherJobKey).StoreDurably());
+            q.AddTrigger(opts => opts
+                .ForJob(dispatcherJobKey)
+                .WithIdentity($"{nameof(SyncDispatcherJob)}-trigger", SyncJobsGroup)
+                .WithCronSchedule(workerOptions.DispatcherCron));
 
-                q.AddJob<SyncFixturesJob>(opts => opts
-                    .WithIdentity(jobKey)
-                    .UsingJobData("SyncMode", jobOptions.SyncMode.ToString())
-                    .UsingJobData("ProviderName", jobOptions.ProviderName)
-                    .UsingJobData("ExternalLeagueId", jobOptions.ExternalLeagueId)
-                    .UsingJobData("ExternalSeasonId", jobOptions.ExternalSeasonId ?? string.Empty)
-                    .UsingJobData("SportId", jobOptions.SportId.ToString())
-                    .UsingJobData("LeagueId", jobOptions.LeagueId?.ToString() ?? string.Empty)
-                    .UsingJobData("SeasonId", jobOptions.SeasonId?.ToString() ?? string.Empty)
-                    .StoreDurably());
+            var shortTermJobKey = new JobKey(nameof(ShortTermSyncJob), SyncJobsGroup);
+            q.AddJob<ShortTermSyncJob>(opts => opts.WithIdentity(shortTermJobKey).StoreDurably());
 
-                q.AddTrigger(opts => opts
-                    .ForJob(jobKey)
-                    .WithIdentity($"{jobOptions.JobId}-trigger", SyncJobsGroup)
-                    .WithCronSchedule(jobOptions.CronSchedule));
-            }
+            var longTermJobKey = new JobKey(nameof(LongTermSyncJob), SyncJobsGroup);
+            q.AddJob<LongTermSyncJob>(opts => opts.WithIdentity(longTermJobKey).StoreDurably());
+            q.AddTrigger(opts => opts
+                .ForJob(longTermJobKey)
+                .WithIdentity($"{nameof(LongTermSyncJob)}-trigger", SyncJobsGroup)
+                .WithCronSchedule(workerOptions.LongTermSyncCron));
 
             var outboxJobKey = new JobKey(nameof(OutboxProcessorJob), OutboxGroup);
             q.AddJob<OutboxProcessorJob>(opts => opts.WithIdentity(outboxJobKey));
-
             q.AddTrigger(opts => opts
                 .ForJob(outboxJobKey)
                 .WithIdentity($"{nameof(OutboxProcessorJob)}-trigger", OutboxGroup)
-                .WithSimpleSchedule(schedule => schedule
-                    .WithInterval(TimeSpan.FromSeconds(10))
-                    .RepeatForever()));
+                .WithSimpleSchedule(schedule => schedule.WithInterval(TimeSpan.FromSeconds(10)).RepeatForever()));
         });
 
         services.AddQuartzHostedService(options =>

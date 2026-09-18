@@ -2,13 +2,12 @@
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Domain.Common;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
-using Sporeo.Fixtures.Domain.Seasons.Rules;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 
 namespace Sporeo.Fixtures.Domain.Seasons;
 
 /// <summary>
-/// Represents a competitive season within a league, with a date range and optional current-season flag.
+/// Represents a competitive season within a league.
 /// </summary>
 public sealed class Season : AggregateRoot<SeasonId>, IAuditable, IDeletable
 {
@@ -21,16 +20,6 @@ public sealed class Season : AggregateRoot<SeasonId>, IAuditable, IDeletable
     /// Gets the display name of the season.
     /// </summary>
     public string Name { get; private set; }
-
-    /// <summary>
-    /// Gets the start date of the season.
-    /// </summary>
-    public DateTimeOffset StartDate { get; private set; }
-
-    /// <summary>
-    /// Gets the end date of the season.
-    /// </summary>
-    public DateTimeOffset EndDate { get; private set; }
 
     /// <summary>
     /// Gets a value indicating whether this season is marked as the current season for its league.
@@ -46,11 +35,6 @@ public sealed class Season : AggregateRoot<SeasonId>, IAuditable, IDeletable
     /// Gets the identifier assigned by the external data provider, if the season originated from synchronization.
     /// </summary>
     public string? ExternalProviderId { get; private set; }
-
-    /// <summary>
-    /// Gets a value indicating whether the season has been manually edited and is locked from external synchronization.
-    /// </summary>
-    public bool IsManuallyEdited { get; private set; }
 
     /// <inheritdoc />
     public DateTimeOffset CreatedOn { get; private set; }
@@ -68,135 +52,49 @@ public sealed class Season : AggregateRoot<SeasonId>, IAuditable, IDeletable
         SeasonId id,
         LeagueId leagueId,
         string name,
-        DateTimeOffset startDate,
-        DateTimeOffset endDate,
         string? externalProviderName,
-        string? externalProviderId,
-        bool isManuallyEdited) : base(id)
+        string? externalProviderId) : base(id)
     {
         LeagueId = leagueId;
         Name = name;
-        StartDate = startDate;
-        EndDate = endDate;
         ExternalProviderName = externalProviderName;
         ExternalProviderId = externalProviderId;
-        IsManuallyEdited = isManuallyEdited;
         IsCurrent = false;
         IsDeleted = false;
     }
 
     /// <summary>
-    /// Creates a season from external provider data.
+    /// Creates a new season.
     /// </summary>
     /// <param name="leagueId">The league to which the season belongs.</param>
     /// <param name="name">The display name of the season.</param>
-    /// <param name="startDate">The start date of the season.</param>
-    /// <param name="endDate">The end date of the season. Must be after <paramref name="startDate"/>.</param>
-    /// <param name="providerName">The name of the external data provider.</param>
-    /// <param name="providerId">The identifier assigned by the external data provider.</param>
+    /// <param name="externalProviderName">The name of the external data provider, if known.</param>
+    /// <param name="externalProviderId">The identifier assigned by the external data provider, if known.</param>
     /// <returns>A successful result containing the new season, or a failure when validation fails.</returns>
-    public static Result<Season> CreateFromProvider(
+    public static Result<Season> Create(
         LeagueId leagueId,
         string name,
-        DateTimeOffset startDate,
-        DateTimeOffset endDate,
-        string providerName,
-        string providerId)
+        string? externalProviderName = null,
+        string? externalProviderId = null)
     {
         var nameValidation = ValidateName(name);
         if (nameValidation.IsFailure)
             return Result.Failure<Season>(nameValidation.Error);
 
-        var providerValidation = ValidateProvider(providerName, providerId);
-        if (providerValidation.IsFailure)
-            return Result.Failure<Season>(providerValidation.Error);
-
-        var datesValidation = ValidateDates(startDate, endDate);
-        if (datesValidation.IsFailure)
-            return Result.Failure<Season>(datesValidation.Error);
-
         return new Season(
             SeasonId.New(),
             leagueId,
             name,
-            startDate,
-            endDate,
-            providerName,
-            providerId,
-            false);
+            externalProviderName,
+            externalProviderId);
     }
 
     /// <summary>
-    /// Creates a season entered manually without external provider linkage.
+    /// Updates the display name of the season.
     /// </summary>
-    /// <param name="leagueId">The league to which the season belongs.</param>
-    /// <param name="name">The display name of the season.</param>
-    /// <param name="startDate">The start date of the season.</param>
-    /// <param name="endDate">The end date of the season. Must be after <paramref name="startDate"/>.</param>
-    /// <returns>A successful result containing the new season, or a failure when validation fails.</returns>
-    public static Result<Season> CreateManually(
-        LeagueId leagueId,
-        string name,
-        DateTimeOffset startDate,
-        DateTimeOffset endDate)
-    {
-        var nameValidation = ValidateName(name);
-        if (nameValidation.IsFailure)
-            return Result.Failure<Season>(nameValidation.Error);
-
-        var datesValidation = ValidateDates(startDate, endDate);
-        if (datesValidation.IsFailure)
-            return Result.Failure<Season>(datesValidation.Error);
-
-        return new Season(
-            SeasonId.New(),
-            leagueId,
-            name,
-            startDate,
-            endDate,
-            null,
-            null,
-            true);
-    }
-
-    /// <summary>
-    /// Updates the season with data received from an external provider.
-    /// </summary>
-    /// <param name="name">The display name of the season.</param>
-    /// <param name="startDate">The start date of the season.</param>
-    /// <param name="endDate">The end date of the season. Must be after <paramref name="startDate"/>.</param>
-    /// <returns>A successful result when synchronization succeeds; otherwise, a failure when the season is locked, deleted, or validation fails.</returns>
-    public Result SyncExternalData(string name, DateTimeOffset startDate, DateTimeOffset endDate)
-    {
-        var guard = EnsureModifiable();
-        if (guard.IsFailure)
-            return guard;
-
-        var syncGuard = CheckRule(new ManuallyEditedSeasonCannotBeSyncedRule(this));
-        if (syncGuard.IsFailure)
-            return syncGuard;
-
-        var nameValidation = ValidateName(name);
-        if (nameValidation.IsFailure)
-            return nameValidation;
-
-        var datesValidation = ValidateDates(startDate, endDate);
-        if (datesValidation.IsFailure)
-            return datesValidation;
-
-        UpdateCoreFields(name, startDate, endDate);
-
-        return Result.Success();
-    }
-
-    /// <summary>
-    /// Updates the season with manually entered data and locks it from external synchronization.
-    /// </summary>
-    /// <param name="name">The display name of the season.</param>
-    /// <param name="startDate">The start date of the season.</param>
-    /// <param name="endDate">The end date of the season. Must be after <paramref name="startDate"/>.</param>
+    /// <param name="name">The new display name.</param>
     /// <returns>A successful result when the update succeeds; otherwise, a failure when the season cannot be modified or validation fails.</returns>
-    public Result UpdateManually(string name, DateTimeOffset startDate, DateTimeOffset endDate)
+    public Result Update(string name)
     {
         var guard = EnsureModifiable();
         if (guard.IsFailure)
@@ -206,13 +104,7 @@ public sealed class Season : AggregateRoot<SeasonId>, IAuditable, IDeletable
         if (nameValidation.IsFailure)
             return nameValidation;
 
-        var datesValidation = ValidateDates(startDate, endDate);
-        if (datesValidation.IsFailure)
-            return datesValidation;
-
-        UpdateCoreFields(name, startDate, endDate);
-        IsManuallyEdited = true;
-
+        Name = name;
         return Result.Success();
     }
 
@@ -269,29 +161,6 @@ public sealed class Season : AggregateRoot<SeasonId>, IAuditable, IDeletable
         string.IsNullOrWhiteSpace(name)
             ? Result.Failure(Errors.Season.EmptyName)
             : Result.Success();
-
-    private static Result ValidateProvider(string providerName, string providerId)
-    {
-        if (string.IsNullOrWhiteSpace(providerName))
-            return Result.Failure(Errors.Season.EmptyProviderName);
-
-        if (string.IsNullOrWhiteSpace(providerId))
-            return Result.Failure(Errors.Season.EmptyProviderId);
-
-        return Result.Success();
-    }
-
-    private static Result ValidateDates(DateTimeOffset startDate, DateTimeOffset endDate) =>
-        startDate >= endDate
-            ? Result.Failure(Errors.Season.InvalidDateRange)
-            : Result.Success();
-
-    private void UpdateCoreFields(string name, DateTimeOffset startDate, DateTimeOffset endDate)
-    {
-        Name = name;
-        StartDate = startDate;
-        EndDate = endDate;
-    }
 
 #pragma warning disable CS8618
     /// <summary>

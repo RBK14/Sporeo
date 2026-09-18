@@ -1,4 +1,9 @@
 using Sporeo.BuildingBlocks.Domain.Results;
+using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
+using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 namespace Sporeo.Fixtures.Domain.Common;
 
@@ -51,8 +56,8 @@ public static class Errors
         /// Returned when a fixture with the specified identifier cannot be found.
         /// </summary>
         /// <param name="fixtureId">The identifier of the fixture that could not be found.</param>
-        public static Error NotFound(Guid fixtureId) =>
-            new("Fixture.NotFound", $"Fixture with ID '{fixtureId}' was not found.");
+        public static Error NotFound(FixtureId fixtureId) =>
+            new("Fixture.NotFound", $"Fixture with ID '{fixtureId.Value}' was not found.");
     }
 
     /// <summary>
@@ -89,8 +94,8 @@ public static class Errors
         /// Returned when a venue with the specified identifier cannot be found.
         /// </summary>
         /// <param name="venueId">The identifier of the venue that could not be found.</param>
-        public static Error NotFound(Guid venueId) =>
-            new("Venue.NotFound", $"Venue with ID '{venueId}' was not found.");
+        public static Error NotFound(VenueId venueId) =>
+            new("Venue.NotFound", $"Venue with ID '{venueId.Value}' was not found.");
 
         /// <summary>
         /// Errors related to venue geographic coordinates.
@@ -149,8 +154,8 @@ public static class Errors
         /// Returned when a sport with the specified identifier cannot be found.
         /// </summary>
         /// <param name="sportId">The identifier of the sport that could not be found.</param>
-        public static Error NotFound(Guid sportId) =>
-            new("Sport.NotFound", $"Sport with ID '{sportId}' was not found.");
+        public static Error NotFound(SportId sportId) =>
+            new("Sport.NotFound", $"Sport with ID '{sportId.Value}' was not found.");
     }
 
     /// <summary>
@@ -187,8 +192,15 @@ public static class Errors
         /// Returned when a league with the specified identifier cannot be found.
         /// </summary>
         /// <param name="leagueId">The identifier of the league that could not be found.</param>
-        public static Error NotFound(Guid leagueId) =>
-            new("League.NotFound", $"League with ID '{leagueId}' was not found.");
+        public static Error NotFound(LeagueId leagueId) =>
+            new("League.NotFound", $"League with ID '{leagueId.Value}' was not found.");
+
+        /// <summary>
+        /// Returned when a league with the specified external identifier cannot be found.
+        /// </summary>
+        /// <param name="externalLeagueId">The external identifier of the league that could not be found.</param>
+        public static Error NotFound(string externalLeagueId) =>
+            new("League.NotFound", $"League with external ID '{externalLeagueId}' was not found.");
 
         /// <summary>
         /// Returned when a league is associated with a sport that does not match the expected sport.
@@ -235,8 +247,8 @@ public static class Errors
         /// Returned when a season with the specified identifier cannot be found.
         /// </summary>
         /// <param name="seasonId">The identifier of the season that could not be found.</param>
-        public static Error NotFound(Guid seasonId) =>
-            new("Season.NotFound", $"Season with ID '{seasonId}' was not found.");
+        public static Error NotFound(SeasonId seasonId) =>
+            new("Season.NotFound", $"Season with ID '{seasonId.Value}' was not found.");
 
         /// <summary>
         /// Returned when a season is associated with a league that does not match the expected league.

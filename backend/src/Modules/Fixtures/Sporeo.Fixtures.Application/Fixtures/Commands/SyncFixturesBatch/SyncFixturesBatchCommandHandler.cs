@@ -6,8 +6,7 @@ using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Abstractions.Persistence;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 using Sporeo.Fixtures.Domain.Common;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
@@ -19,9 +18,7 @@ namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 /// Orchestrates fixture batch synchronization by processing isolated chunks in fresh DI scopes.
 /// </summary>
 internal sealed class SyncFixturesBatchCommandHandler(
-    ISportRepository sportRepository,
     ILeagueRepository leagueRepository,
-    ISeasonRepository seasonRepository,
     IServiceScopeFactory scopeFactory,
     IDatabaseExceptionClassifier exceptionClassifier,
     ILogger<SyncFixturesBatchCommandHandler> logger)
@@ -34,43 +31,39 @@ internal sealed class SyncFixturesBatchCommandHandler(
         SyncFixturesBatchCommand request,
         CancellationToken cancellationToken)
     {
-        var sportId = SportId.FromValue(request.SportId);
+        var league = await leagueRepository.GetByExternalProviderAsync(
+            request.ProviderName,
+            request.ExternalLeagueId,
+            cancellationToken);
 
-        var sport = await sportRepository.GetByIdAsync(sportId, cancellationToken);
-        if (sport is null)
-            return Result.Failure<SyncBatchResultDto>(Errors.Sport.NotFound(sportId.Value));
+        if (league is null)
+            return Result.Failure<SyncBatchResultDto>(Errors.League.NotFound(request.ExternalLeagueId));
 
-        LeagueId? leagueId = null;
-        if (request.LeagueId is not null)
-        {
-            leagueId = LeagueId.FromValue(request.LeagueId.Value);
+        var incomingSeasonNames = request.Fixtures
+            .Select(f => f.SeasonName)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct()
+            .ToList();
 
-            var league = await leagueRepository.GetByIdAsync(leagueId, cancellationToken);
-            if (league is null)
-                return Result.Failure<SyncBatchResultDto>(Errors.League.NotFound(leagueId.Value));
+        var firstUpcomingFixture = request.Fixtures
+            .Where(f => f.StartDate >= DateTimeOffset.UtcNow)
+            .MinBy(f => f.StartDate);
 
-            if (league.SportId != sportId)
-                return Result.Failure<SyncBatchResultDto>(Errors.League.InconsistentHierarchy);
-        }
-
-        SeasonId? seasonId = null;
-        if (request.SeasonId is not null)
-        {
-            seasonId = SeasonId.FromValue(request.SeasonId.Value);
-
-            var season = await seasonRepository.GetByIdAsync(seasonId, cancellationToken);
-            if (season is null)
-                return Result.Failure<SyncBatchResultDto>(Errors.Season.NotFound(seasonId.Value));
-
-            if (leagueId is not null && season.LeagueId != leagueId)
-                return Result.Failure<SyncBatchResultDto>(Errors.Season.InconsistentHierarchy);
-        }
+        var seasonMap = await EnsureSeasonsAsync(
+            league.Id,
+            incomingSeasonNames,
+            firstUpcomingFixture?.StartDate,
+            firstUpcomingFixture?.SeasonName,
+            cancellationToken);
 
         var aggregate = SyncBatchResultDto.Empty;
 
         foreach (var chunk in request.Fixtures.Chunk(SyncFixturesBatchCommand.ChunkSize))
         {
             var chunkReport = await ProcessChunkWithIsolationAsync(
+                league.SportId,
+                league.Id,
+                seasonMap,
                 request,
                 chunk.ToList(),
                 cancellationToken);
@@ -100,6 +93,9 @@ internal sealed class SyncFixturesBatchCommandHandler(
     }
 
     private async Task<SyncBatchResultDto> ProcessChunkWithIsolationAsync(
+        SportId sportId,
+        LeagueId leagueId,
+        IReadOnlyDictionary<string, SeasonId> seasonMap,
         SyncFixturesBatchCommand request,
         IReadOnlyList<ExternalFixtureDto> chunk,
         CancellationToken cancellationToken)
@@ -110,7 +106,7 @@ internal sealed class SyncFixturesBatchCommandHandler(
         {
             try
             {
-                return await SendChunkAsync(request, chunk, cancellationToken);
+                return await SendChunkAsync(sportId, leagueId, seasonMap, request, chunk, cancellationToken);
             }
             catch (Exception ex) when (exceptionClassifier.IsUniqueConstraintViolation(ex))
             {
@@ -129,10 +125,13 @@ internal sealed class SyncFixturesBatchCommandHandler(
             "Chunk unique-constraint retries exhausted. Falling back to per-item isolation for {Count} fixtures.",
             chunk.Count);
 
-        return await ProcessItemsIsolatedAsync(request, chunk, cancellationToken);
+        return await ProcessItemsIsolatedAsync(sportId, leagueId, seasonMap, request, chunk, cancellationToken);
     }
 
     private async Task<SyncBatchResultDto> ProcessItemsIsolatedAsync(
+        SportId sportId,
+        LeagueId leagueId,
+        IReadOnlyDictionary<string, SeasonId> seasonMap,
         SyncFixturesBatchCommand request,
         IReadOnlyList<ExternalFixtureDto> chunk,
         CancellationToken cancellationToken)
@@ -144,18 +143,22 @@ internal sealed class SyncFixturesBatchCommandHandler(
             try
             {
                 var itemReport = await ProcessChunkWithIsolationForSingleItemAsync(
+                    sportId,
+                    leagueId,
+                    seasonMap,
                     request,
                     fixture,
                     cancellationToken);
+
                 aggregate = aggregate.Add(itemReport);
             }
             catch (Exception ex) when (exceptionClassifier.IsUniqueConstraintViolation(ex))
             {
                 logger.LogWarning(
                     ex,
-                    "Skipping fixture {ProviderName}/{ProviderId} after unique constraint conflict.",
+                    "Skipping fixture {ProviderName}/{ExternalId} after unique constraint conflict.",
                     request.ProviderName,
-                    fixture.ProviderId);
+                    fixture.ExternalId);
 
                 aggregate = aggregate.Add(SyncBatchResultDto.Create(0, 0, skipped: 1, failed: 0));
             }
@@ -165,6 +168,9 @@ internal sealed class SyncFixturesBatchCommandHandler(
     }
 
     private async Task<SyncBatchResultDto> ProcessChunkWithIsolationForSingleItemAsync(
+        SportId sportId,
+        LeagueId leagueId,
+        IReadOnlyDictionary<string, SeasonId> seasonMap,
         SyncFixturesBatchCommand request,
         ExternalFixtureDto fixture,
         CancellationToken cancellationToken)
@@ -175,16 +181,16 @@ internal sealed class SyncFixturesBatchCommandHandler(
         {
             try
             {
-                return await SendChunkAsync(request, [fixture], cancellationToken);
+                return await SendChunkAsync(sportId, leagueId, seasonMap, request, [fixture], cancellationToken);
             }
             catch (Exception ex) when (exceptionClassifier.IsUniqueConstraintViolation(ex))
             {
                 lastUniqueViolation = ex;
                 logger.LogWarning(
                     ex,
-                    "Unique constraint conflict for fixture {ProviderName}/{ProviderId} (attempt {Attempt}/{MaxAttempts}).",
+                    "Unique constraint conflict for fixture {ProviderName}/{ExternalId} (attempt {Attempt}/{MaxAttempts}).",
                     request.ProviderName,
-                    fixture.ProviderId,
+                    fixture.ExternalId,
                     attempt,
                     MaxUniqueViolationRetries);
             }
@@ -194,7 +200,37 @@ internal sealed class SyncFixturesBatchCommandHandler(
               new InvalidOperationException("Unique constraint retries exhausted without capturing an exception.");
     }
 
+    private async Task<IReadOnlyDictionary<string, SeasonId>> EnsureSeasonsAsync(
+        LeagueId leagueId,
+        IReadOnlyList<string> seasonNames,
+        DateTimeOffset? nextFixtureDate,
+        string? nextFixtureSeasonName,
+        CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+
+        var result = await sender.Send(
+            new EnsureSeasonsForSyncCommand(
+                leagueId,
+                seasonNames,
+                nextFixtureDate,
+                nextFixtureSeasonName),
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            throw new InvalidOperationException(
+                $"Season ensure failed: {result.Error.Code} {result.Error.Message}");
+        }
+
+        return result.Value;
+    }
+
     private async Task<SyncBatchResultDto> SendChunkAsync(
+        SportId sportId,
+        LeagueId leagueId,
+        IReadOnlyDictionary<string, SeasonId> seasonMap,
         SyncFixturesBatchCommand request,
         IReadOnlyList<ExternalFixtureDto> chunk,
         CancellationToken cancellationToken)
@@ -203,10 +239,10 @@ internal sealed class SyncFixturesBatchCommandHandler(
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
         var command = new SyncFixturesBatchChunkCommand(
-            request.SportId,
-            request.LeagueId,
-            request.SeasonId,
             request.ProviderName,
+            sportId,
+            leagueId,
+            seasonMap,
             chunk);
 
         var result = await sender.Send(command, cancellationToken);

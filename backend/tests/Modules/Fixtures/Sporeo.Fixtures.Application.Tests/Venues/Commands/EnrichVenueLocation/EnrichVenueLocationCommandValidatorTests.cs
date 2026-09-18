@@ -1,32 +1,9 @@
 using FluentAssertions;
-using Sporeo.Fixtures.Application.Venues.Commands.EnrichVenueLocation;
 using Sporeo.Fixtures.Domain.Venues.Events;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using VenueAggregate = Sporeo.Fixtures.Domain.Venues.Venue;
 
 namespace Sporeo.Fixtures.Application.Tests.Venues.Commands;
-
-public sealed class EnrichVenueLocationCommandValidatorTests
-{
-    private readonly EnrichVenueLocationCommandValidator _validator = new();
-
-    [Fact]
-    public void Validate_WithEmptyVenueId_ShouldFail()
-    {
-        var result = _validator.Validate(new EnrichVenueLocationCommand(Guid.Empty));
-
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(error => error.ErrorCode == "Venue.InvalidId");
-    }
-
-    [Fact]
-    public void Validate_WithVenueId_ShouldSucceed()
-    {
-        var result = _validator.Validate(new EnrichVenueLocationCommand(Guid.NewGuid()));
-
-        result.IsValid.Should().BeTrue();
-    }
-}
 
 public sealed class VenueCreatedDomainEventEmissionTests
 {

@@ -4,6 +4,7 @@ using Sporeo.BuildingBlocks.Domain.Events;
 using Sporeo.BuildingBlocks.Domain.Time;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
 
 namespace Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Processing;
 
@@ -21,7 +22,8 @@ public sealed class OutboxProcessor(
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        Converters = { new TypedIdJsonConverterFactory() }
     };
 
     /// <inheritdoc />

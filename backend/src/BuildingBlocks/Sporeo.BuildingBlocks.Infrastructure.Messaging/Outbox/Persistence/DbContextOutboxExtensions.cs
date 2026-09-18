@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Sporeo.BuildingBlocks.Domain.Events;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
 
 namespace Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
 
@@ -13,7 +14,8 @@ public static class DbContextOutboxExtensions
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()
     {
-        WriteIndented = false
+        WriteIndented = false,
+        Converters = { new TypedIdJsonConverterFactory() }
     };
 
     /// <summary>

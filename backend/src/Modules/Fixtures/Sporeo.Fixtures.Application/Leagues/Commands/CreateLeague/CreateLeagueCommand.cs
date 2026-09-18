@@ -1,4 +1,6 @@
 ﻿using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Leagues.Commands.CreateLeague;
 
@@ -9,6 +11,6 @@ namespace Sporeo.Fixtures.Application.Leagues.Commands.CreateLeague;
 /// <param name="Name">The league display name.</param>
 /// <param name="Country">Optional country association.</param>
 public sealed record CreateLeagueCommand(
-    Guid SportId,
+    SportId SportId,
     string Name,
-    string? Country) : ICommand<Guid>;
+    string? Country) : ICommand<LeagueId>;

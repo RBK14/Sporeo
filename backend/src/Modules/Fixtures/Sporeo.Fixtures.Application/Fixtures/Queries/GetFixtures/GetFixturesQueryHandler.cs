@@ -1,14 +1,14 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Application.Pagination;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadModels;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadStores;
 
 namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtures;
 
 internal sealed class GetFixturesQueryHandler(IFixtureReadStore readStore)
-    : IQueryHandler<GetFixturesQuery, PagedResult<FixtureListItemResponse>>
+    : IQueryHandler<GetFixturesQuery, PagedResult<FixtureListItemReadModel>>
 {
-    public async Task<Result<PagedResult<FixtureListItemResponse>>> Handle(
+    public async Task<Result<PagedResult<FixtureListItemReadModel>>> Handle(
         GetFixturesQuery request,
         CancellationToken cancellationToken)
     {

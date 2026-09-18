@@ -208,9 +208,6 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("DeletedOn")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<DateTimeOffset>("EndDate")
-                        .HasColumnType("datetimeoffset");
-
                     b.Property<string>("ExternalProviderId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -225,9 +222,6 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<bool>("IsManuallyEdited")
-                        .HasColumnType("bit");
-
                     b.Property<Guid>("LeagueId")
                         .HasColumnType("uniqueidentifier");
 
@@ -238,9 +232,6 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTimeOffset>("StartDate")
-                        .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
 

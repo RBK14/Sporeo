@@ -7,33 +7,32 @@ using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Tests.Fixtures.Commands;
 
 public sealed class SyncFixturesBatchChunkCommandHandlerTests
 {
+    private static readonly Guid SportGuid = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid LeagueGuid = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid SeasonGuid = Guid.Parse("33333333-3333-3333-3333-333333333333");
+
     [Fact]
     public async Task Handle_WithPartialFixtureFailures_ShouldSucceedAndReportFailures()
     {
-        var sportId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var validFixture = new ExternalFixtureDto(
-            "valid-1",
-            "TheSportsDB",
-            "Home vs Away",
-            DateTimeOffset.UtcNow.AddDays(1),
-            FixtureStatus.Scheduled,
-            null);
+        var validFixture = CreateExternalFixture("valid-1");
         var invalidFixture = validFixture with
         {
-            ProviderId = "invalid-1",
+            ExternalId = "invalid-1",
             Name = " "
         };
 
         var handler = CreateHandler(out var fixtureRepository, out _);
 
         var result = await handler.Handle(
-            new SyncFixturesBatchChunkCommand(sportId, null, null, "TheSportsDB", [validFixture, invalidFixture]),
+            CreateChunkCommand([validFixture, invalidFixture]),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -47,19 +46,12 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
     [Fact]
     public async Task Handle_WithAllValidFixtures_ShouldReportNoFailures()
     {
-        var sportId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var fixture = new ExternalFixtureDto(
-            "1",
-            "TheSportsDB",
-            "Home vs Away",
-            DateTimeOffset.UtcNow.AddDays(1),
-            FixtureStatus.Scheduled,
-            null);
+        var fixture = CreateExternalFixture("1");
 
         var handler = CreateHandler(out var fixtureRepository, out _);
 
         var result = await handler.Handle(
-            new SyncFixturesBatchChunkCommand(sportId, null, null, "TheSportsDB", [fixture]),
+            CreateChunkCommand([fixture]),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -72,16 +64,19 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
     [Fact]
     public async Task Handle_WithManuallyEditedFixture_ShouldSkip()
     {
-        var sportId = Guid.Parse("11111111-1111-1111-1111-111111111111");
         var existing = Fixture.CreateFromProvider(
-            SportId.FromValue(sportId),
-            null,
+            SportId.FromValue(SportGuid),
+            LeagueId.FromValue(LeagueGuid),
             null,
             "Home vs Away",
             DateTimeOffset.UtcNow.AddDays(1),
             "TheSportsDB",
             "1").Value;
-        existing.UpdateManually(SportId.FromValue(sportId), null, "Manual", DateTimeOffset.UtcNow.AddDays(2));
+        existing.UpdateManually(
+            SportId.FromValue(SportGuid),
+            LeagueId.FromValue(LeagueGuid),
+            "Manual",
+            DateTimeOffset.UtcNow.AddDays(2));
 
         var fixtureRepository = Substitute.For<IFixtureRepository>();
         fixtureRepository.GetByExternalProviderIdsAsync(
@@ -102,16 +97,10 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
             venueRepository,
             NullLogger<SyncFixturesBatchChunkCommandHandler>.Instance);
 
-        var incoming = new ExternalFixtureDto(
-            "1",
-            "TheSportsDB",
-            "Provider Name",
-            DateTimeOffset.UtcNow.AddDays(3),
-            FixtureStatus.Scheduled,
-            null);
+        var incoming = CreateExternalFixture("1") with { Name = "Provider Name", StartDate = DateTimeOffset.UtcNow.AddDays(3) };
 
         var result = await handler.Handle(
-            new SyncFixturesBatchChunkCommand(sportId, null, null, "TheSportsDB", [incoming]),
+            CreateChunkCommand([incoming]),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -124,19 +113,12 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
     [Fact]
     public async Task Handle_WithDuplicateProviderIds_ShouldSkipDuplicates()
     {
-        var sportId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var fixture = new ExternalFixtureDto(
-            "1",
-            "TheSportsDB",
-            "Home vs Away",
-            DateTimeOffset.UtcNow.AddDays(1),
-            FixtureStatus.Scheduled,
-            null);
+        var fixture = CreateExternalFixture("1");
 
         var handler = CreateHandler(out var fixtureRepository, out _);
 
         var result = await handler.Handle(
-            new SyncFixturesBatchChunkCommand(sportId, null, null, "TheSportsDB", [fixture, fixture with { Name = "Other" }]),
+            CreateChunkCommand([fixture, fixture with { Name = "Other" }]),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -150,19 +132,12 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
     [Fact]
     public async Task Handle_WithMixedProvider_ShouldFailItem()
     {
-        var sportId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var fixture = new ExternalFixtureDto(
-            "1",
-            "OtherProvider",
-            "Home vs Away",
-            DateTimeOffset.UtcNow.AddDays(1),
-            FixtureStatus.Scheduled,
-            null);
+        var fixture = CreateExternalFixture("1") with { ProviderName = "OtherProvider" };
 
         var handler = CreateHandler(out var fixtureRepository, out _);
 
         var result = await handler.Handle(
-            new SyncFixturesBatchChunkCommand(sportId, null, null, "TheSportsDB", [fixture]),
+            CreateChunkCommand([fixture]),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -173,14 +148,7 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
     [Fact]
     public async Task Handle_LookupUsesProviderNameAndProviderId()
     {
-        var sportId = Guid.Parse("11111111-1111-1111-1111-111111111111");
-        var fixture = new ExternalFixtureDto(
-            "42",
-            "TheSportsDB",
-            "Home vs Away",
-            DateTimeOffset.UtcNow.AddDays(1),
-            FixtureStatus.Scheduled,
-            null);
+        var fixture = CreateExternalFixture("42");
 
         var fixtureRepository = Substitute.For<IFixtureRepository>();
         fixtureRepository.GetByExternalProviderIdsAsync(
@@ -202,7 +170,7 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
             NullLogger<SyncFixturesBatchChunkCommandHandler>.Instance);
 
         await handler.Handle(
-            new SyncFixturesBatchChunkCommand(sportId, null, null, "TheSportsDB", [fixture]),
+            CreateChunkCommand([fixture]),
             CancellationToken.None);
 
         await fixtureRepository.Received(1).GetByExternalProviderIdsAsync(
@@ -210,6 +178,25 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
             Arg.Is<IEnumerable<string>>(ids => ids.Single() == "42"),
             Arg.Any<CancellationToken>());
     }
+
+    private static SyncFixturesBatchChunkCommand CreateChunkCommand(
+        IReadOnlyList<ExternalFixtureDto> fixtures) =>
+        new(
+            "TheSportsDB",
+            SportId.FromValue(SportGuid),
+            LeagueId.FromValue(LeagueGuid),
+            new Dictionary<string, SeasonId> { ["2025-2026"] = SeasonId.FromValue(SeasonGuid) },
+            fixtures);
+
+    private static ExternalFixtureDto CreateExternalFixture(string externalId) =>
+        new(
+            "TheSportsDB",
+            externalId,
+            "Home vs Away",
+            "2025-2026",
+            DateTimeOffset.UtcNow.AddDays(1),
+            FixtureStatus.Scheduled,
+            null);
 
     private static SyncFixturesBatchChunkCommandHandler CreateHandler(
         out IFixtureRepository fixtureRepository,

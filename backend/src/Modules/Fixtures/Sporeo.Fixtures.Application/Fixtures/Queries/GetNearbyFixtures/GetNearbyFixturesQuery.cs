@@ -17,4 +17,4 @@ public sealed record GetNearbyFixturesQuery(
     double Longitude,
     double RadiusInMeters,
     PaginationParams Pagination,
-    FixtureFilters Filters) : IQuery<PagedResult<NearbyFixtureListItemResponse>>;
+    FixtureFilters Filters) : IQuery<PagedResult<NearbyFixtureListItemReadModel>>;

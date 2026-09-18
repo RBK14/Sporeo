@@ -1,6 +1,7 @@
 ﻿using Sporeo.BuildingBlocks.Domain.Models;
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Domain.Common;
+using Sporeo.Fixtures.Domain.Leagues.Events;
 using Sporeo.Fixtures.Domain.Leagues.Rules;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
@@ -103,7 +104,7 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
         if (providerValidation.IsFailure)
             return Result.Failure<League>(providerValidation.Error);
 
-        return new League(
+        var league = new League(
             LeagueId.New(),
             sportId,
             name,
@@ -112,6 +113,10 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
             providerId,
             true,
             false);
+
+        league.AddDomainEvent(new LeagueMonitoringEnabledDomainEvent(league.Id));
+        
+        return league;
     }
 
     /// <summary>
@@ -201,6 +206,12 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
             return Result.Success();
 
         IsMonitored = isMonitored;
+
+        if (IsMonitored && !string.IsNullOrWhiteSpace(ExternalProviderName)
+            && !string.IsNullOrWhiteSpace(ExternalProviderId))
+        {
+            AddDomainEvent(new LeagueMonitoringEnabledDomainEvent(Id));
+        }
 
         return Result.Success();
     }

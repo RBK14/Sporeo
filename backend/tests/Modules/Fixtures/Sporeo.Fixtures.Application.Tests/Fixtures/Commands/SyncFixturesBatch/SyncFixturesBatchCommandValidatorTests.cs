@@ -56,14 +56,14 @@ public sealed class SyncFixturesBatchCommandValidatorTests
     }
 
     [Fact]
-    public async Task Validate_WithEmptySeasonId_ShouldFail()
+    public async Task Validate_WithEmptyExternalLeagueId_ShouldFail()
     {
-        var command = CreateValidCommand() with { SeasonId = Guid.Empty };
+        var command = CreateValidCommand() with { ExternalLeagueId = " " };
 
         var result = await _validator.ValidateAsync(command);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(error => error.ErrorCode == "SyncFixtures.InvalidSeasonId");
+        result.Errors.Should().Contain(error => error.ErrorCode == "SyncFixtures.InvalidExternalLeagueId");
     }
 
     [Fact]
@@ -93,17 +93,16 @@ public sealed class SyncFixturesBatchCommandValidatorTests
     private static SyncFixturesBatchCommand CreateValidCommand(
         IReadOnlyList<ExternalFixtureDto>? fixtures = null) =>
         new(
-            Guid.Parse("11111111-1111-1111-1111-111111111111"),
-            Guid.Parse("22222222-2222-2222-2222-222222222222"),
-            null,
             "TheSportsDB",
+            "ext-league-1",
             fixtures ?? [CreateFixture("1")]);
 
     private static ExternalFixtureDto CreateFixture(string providerId) =>
         new(
-            providerId,
             "TheSportsDB",
+            providerId,
             "Home vs Away",
+            "2025-2026",
             DateTimeOffset.UtcNow,
             FixtureStatus.Scheduled,
             null);

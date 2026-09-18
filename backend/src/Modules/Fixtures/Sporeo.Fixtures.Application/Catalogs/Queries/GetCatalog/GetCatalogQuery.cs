@@ -7,4 +7,4 @@ namespace Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 /// Query that retrieves a paged catalog of sports and leagues from the external provider (cached).
 /// </summary>
 /// <param name="Pagination">The page number and page size used to slice the sports list.</param>
-public sealed record GetCatalogQuery(PaginationParams Pagination) : IQuery<PagedResult<CatalogSportResponse>>;
+public sealed record GetCatalogQuery(PaginationParams Pagination) : IQuery<PagedResult<CatalogSportReadModel>>;

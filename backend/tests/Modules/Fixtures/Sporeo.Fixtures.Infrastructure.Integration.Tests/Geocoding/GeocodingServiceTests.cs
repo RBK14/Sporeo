@@ -8,7 +8,7 @@ using NSubstitute;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
-using Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
+using Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Tests.Geocoding;
 
