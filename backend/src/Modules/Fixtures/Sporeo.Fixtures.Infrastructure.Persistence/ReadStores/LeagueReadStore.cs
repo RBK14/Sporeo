@@ -64,4 +64,31 @@ internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactor
 
         return result.ToList();
     }
+
+    public async Task<IReadOnlyList<LeagueWithCurrentSeasonReadModel>> GetMonitoredLeaguesWithCurrentSeasonAsync(CancellationToken cancellationToken = default)
+    {
+        using var connection = sqlConnectionFactory.CreateConnection();
+
+        const string sql = """
+        SELECT 
+            l.Id AS LeagueId,
+            l.ExternalProviderName,
+            l.ExternalProviderId,
+            s.Name AS CurrentSeasonName
+        FROM Leagues l
+        INNER JOIN seasons s ON s.LeagueId = l.Id
+          AND s.IsCurrent = 1
+          AND s.IsDeleted = 0
+        WHERE l.IsMonitored = 1
+          AND l.IsDeleted = 0
+          AND l.ExternalProviderId IS NOT NULL
+        """;
+
+        var result = await connection.QueryAsync<LeagueWithCurrentSeasonReadModel>(
+            new CommandDefinition(
+                sql,
+                cancellationToken: cancellationToken));
+
+        return result.ToList();
+    }
 }

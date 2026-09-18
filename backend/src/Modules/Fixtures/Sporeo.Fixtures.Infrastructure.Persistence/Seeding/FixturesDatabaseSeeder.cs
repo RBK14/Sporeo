@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Sporeo.Fixtures.Domain.Leagues;
+using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 
@@ -52,6 +53,16 @@ internal sealed class FixturesDatabaseSeeder(FixturesDbContext dbContext)
             // Change the monitoring status for specific leagues based on their provider ID
             if (providerId == "4329" || providerId == "4330")
                 league.ChangeMonitoringStatus(false);
+
+            var hasCurrentSeason = await dbContext.Seasons
+                .AnyAsync(s => s.LeagueId == league.Id && s.IsCurrent, cancellationToken);
+
+            if (!hasCurrentSeason)
+            {
+                var season = Season.Create(league.Id, "2026-2027").Value;
+                season.MarkAsCurrent();
+                dbContext.Seasons.Add(season);
+            }
         }
 
         var motorsport = await dbContext.Sports

@@ -22,5 +22,17 @@ public interface ILeagueReadStore
         IEnumerable<string> leagueProviderIds,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets a list of monitored leagues for which sync jobs should be dispatched.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A list of monitored leagues.</returns>
     Task<IReadOnlyList<MonitoredLeagueForSyncReadModel>> GetMonitoredLeaguesForSyncAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a list of monitored leagues with an current season.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>A list of leagues with current seasons.</returns>
+    Task<IReadOnlyList<LeagueWithCurrentSeasonReadModel>> GetMonitoredLeaguesWithCurrentSeasonAsync(CancellationToken cancellationToken = default);
 }

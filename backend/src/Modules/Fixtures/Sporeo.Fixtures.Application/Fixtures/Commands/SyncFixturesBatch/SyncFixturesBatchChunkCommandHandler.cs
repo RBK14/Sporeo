@@ -6,6 +6,7 @@ using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Common;
 using Sporeo.Fixtures.Domain.Fixtures;
+using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
@@ -296,6 +297,10 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
 
             if (existingFixtures.TryGetValue(incomingFixture.ExternalId, out var fixture))
             {
+                // Skip fixtures that are already finished, as they should not be updated anymore
+                if (fixture.Status == FixtureStatus.Finished)
+                    continue;
+
                 var syncResult = fixture.SyncFromProvider(
                     sportId,
                     leagueId,

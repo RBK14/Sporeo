@@ -18,6 +18,6 @@ public interface IExternalFixturesClient
 
     Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchLongTermFixturesAsync(
         string externalLeagueId,
-        string externalSeasonId,
+        string seasonName,
         CancellationToken cancellationToken = default);
 }

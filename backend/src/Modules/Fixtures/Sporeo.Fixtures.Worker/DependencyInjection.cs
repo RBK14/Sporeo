@@ -72,6 +72,13 @@ public static class DependencyInjection
             var shortTermJobKey = new JobKey(nameof(ShortTermSyncJob), SyncJobsGroup);
             q.AddJob<ShortTermSyncJob>(opts => opts.WithIdentity(shortTermJobKey).StoreDurably());
 
+            var longTermJobKey = new JobKey(nameof(LongTermSyncJob), SyncJobsGroup);
+            q.AddJob<LongTermSyncJob>(opts => opts.WithIdentity(longTermJobKey).StoreDurably());
+            q.AddTrigger(opts => opts
+                .ForJob(longTermJobKey)
+                .WithIdentity($"{nameof(LongTermSyncJob)}-trigger", SyncJobsGroup)
+                .WithCronSchedule(workerOptions.LongTermSyncCron));
+
             var outboxJobKey = new JobKey(nameof(OutboxProcessorJob), OutboxGroup);
             q.AddJob<OutboxProcessorJob>(opts => opts.WithIdentity(outboxJobKey));
             q.AddTrigger(opts => opts

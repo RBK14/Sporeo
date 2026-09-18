@@ -39,13 +39,13 @@ internal sealed class TheSportsDbClient(
     public string ProviderName => "TheSportsDB";
 
     public async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchShortTermFixturesAsync(
-        string leagueId,
+        string externalLeagueId,
         CancellationToken cancellationToken)
     {
-        logger.LogInformation("Running short term sync for league {LeagueId}.", leagueId);
+        logger.LogInformation("Running short term sync for league {LeagueId}.", externalLeagueId);
 
-        var pastTask = FetchAndMapFixturesAsync("eventspastleague.php", leagueId, seasonId: null, cancellationToken);
-        var nextTask = FetchAndMapFixturesAsync("eventsnextleague.php", leagueId, seasonId: null, cancellationToken);
+        var pastTask = FetchAndMapFixturesAsync("eventspastleague.php", externalLeagueId, seasonId: null, cancellationToken);
+        var nextTask = FetchAndMapFixturesAsync("eventsnextleague.php", externalLeagueId, seasonId: null, cancellationToken);
 
         await Task.WhenAll(pastTask, nextTask);
 
@@ -66,18 +66,17 @@ internal sealed class TheSportsDbClient(
     }
 
     public async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchLongTermFixturesAsync(
-        string leagueId,
-        string seasonId,
+        string externalLeagueId,
+        string seasonName,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(seasonId))
+        if (string.IsNullOrWhiteSpace(seasonName))
         {
             return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
                 new Error("ExternalFixtures.MissingSeasonId", "Long term sync requires ExternalSeasonId."));
         }
-
-        logger.LogInformation("Running long term sync (season {SeasonId}) for league {LeagueId}.", seasonId, leagueId);
-        return await FetchAndMapFixturesAsync("eventsseason.php", leagueId, seasonId, cancellationToken);
+        logger.LogInformation("Running long term sync (season {SeasonId}) for league {LeagueId}.", seasonName, externalLeagueId);
+        return await FetchAndMapFixturesAsync("eventsseason.php", externalLeagueId, seasonName, cancellationToken);
     }
 
     /// <inheritdoc />
