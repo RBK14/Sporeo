@@ -6,6 +6,8 @@ using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 namespace Sporeo.Fixtures.Infrastructure.Persistence.ReadModels;
 internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactory) : ILeagueReadStore
 {
+    private sealed record LeagueStatusDto(string ExternalProviderId, Guid Id, bool IsMonitored);
+
     public async Task<IReadOnlyDictionary<string, (LeagueId Id, bool IsMonitored)>> GetLeagueStatusesAsync(
         string providerName,
         IEnumerable<string> leagueProviderIds,
@@ -37,7 +39,29 @@ internal sealed class LeagueReadStore (ISqlConnectionFactory sqlConnectionFactor
         return result.ToDictionary(
             x => x.ExternalProviderId,
             x => (LeagueId.FromValue(x.Id), x.IsMonitored));
+
     }
 
+    public async Task<IReadOnlyList<MonitoredLeagueForSyncDto>> GetMonitoredLeaguesForSyncAsync(CancellationToken cancellationToken = default)
+    {
+        using var connection = sqlConnectionFactory.CreateConnection();
+
+        const string sql = """
+        SELECT 
+            l.Id AS LeagueId,
+            l.SportId,
+            l.ExternalProviderName,
+            l.ExternalProviderId
+        FROM Leagues l
+        WHERE IsMonitored = 1
+          AND IsDeleted = 0
+        """;
+
+        var result = await connection.QueryAsync<MonitoredLeagueForSyncDto>(
+            new CommandDefinition(
+                sql,
+                cancellationToken: cancellationToken));
+
+        return result.ToList();
+    }
 }
-internal sealed record LeagueStatusDto(string ExternalProviderId, Guid Id, bool IsMonitored);

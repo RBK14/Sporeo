@@ -29,20 +29,19 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
         CancellationToken cancellationToken)
     {
         var sportId = SportId.FromValue(request.SportId);
-        var leagueId = request.LeagueId.HasValue ? LeagueId.FromValue(request.LeagueId.Value) : null;
-        var seasonId = request.SeasonId.HasValue ? SeasonId.FromValue(request.SeasonId.Value) : null;
+        var leagueId = LeagueId.FromValue(request.LeagueId);
 
         var prepared = PrepareFixtures(request.ProviderName, request.Fixtures);
         var venues = prepared.Fixtures
             .Where(fixture => fixture.Venue is not null &&
-                              !string.IsNullOrWhiteSpace(fixture.Venue.ProviderId))
+                              !string.IsNullOrWhiteSpace(fixture.Venue.ExternalId))
             .Select(fixture => fixture.Venue!)
-            .DistinctBy(venue => venue.ProviderId, StringComparer.Ordinal)
+            .DistinctBy(venue => venue.ExternalId, StringComparer.Ordinal)
             .ToList();
 
         var existingVenues = (await venueRepository.GetByExternalProviderIdsAsync(
                 request.ProviderName,
-                venues.Select(venue => venue.ProviderId),
+                venues.Select(venue => venue.ExternalId),
                 cancellationToken))
             .Where(venue => string.Equals(venue.ExternalProviderName, request.ProviderName, StringComparison.Ordinal))
             .GroupBy(venue => venue.ExternalProviderId!, StringComparer.Ordinal)
@@ -50,7 +49,7 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
 
         var existingFixtures = (await fixtureRepository.GetByExternalProviderIdsAsync(
                 request.ProviderName,
-                prepared.Fixtures.Select(fixture => fixture.ProviderId),
+                prepared.Fixtures.Select(fixture => fixture.ExternalId),
                 cancellationToken))
             .Where(fixture => string.Equals(fixture.ExternalProviderName, request.ProviderName, StringComparison.Ordinal))
             .GroupBy(fixture => fixture.ExternalProviderId!, StringComparer.Ordinal)
@@ -58,10 +57,11 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
 
         var venueIdMap = new Dictionary<string, VenueId>(StringComparer.Ordinal);
         ProcessVenues(request.ProviderName, venues, existingVenues, venueIdMap);
+
         var fixtureReport = ProcessFixtures(
             sportId,
             leagueId,
-            seasonId,
+            request.SeasonMap,
             request.ProviderName,
             prepared.Fixtures,
             existingFixtures,
@@ -104,20 +104,20 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
 
         foreach (var fixture in incoming)
         {
-            if (string.IsNullOrWhiteSpace(fixture.ProviderId) ||
+            if (string.IsNullOrWhiteSpace(fixture.ExternalId) ||
                 string.IsNullOrWhiteSpace(fixture.ProviderName) ||
                 string.IsNullOrWhiteSpace(fixture.Name) ||
                 !string.Equals(fixture.ProviderName, providerName, StringComparison.Ordinal) ||
                 (fixture.Venue is not null &&
                  (!string.Equals(fixture.Venue.ProviderName, providerName, StringComparison.Ordinal) ||
-                  string.IsNullOrWhiteSpace(fixture.Venue.ProviderId) ||
+                  string.IsNullOrWhiteSpace(fixture.Venue.ExternalId) ||
                   string.IsNullOrWhiteSpace(fixture.Venue.Name))))
             {
                 failed++;
                 continue;
             }
 
-            if (!seen.Add(fixture.ProviderId))
+            if (!seen.Add(fixture.ExternalId))
             {
                 duplicateSkipped++;
                 continue;
@@ -137,16 +137,16 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
     {
         foreach (var incomingVenue in incomingVenues)
         {
-            if (existingVenues.TryGetValue(incomingVenue.ProviderId, out var existingVenue))
+            if (existingVenues.TryGetValue(incomingVenue.ExternalId, out var existingVenue))
             {
-                venueIdMap[incomingVenue.ProviderId] = existingVenue.Id;
+                venueIdMap[incomingVenue.ExternalId] = existingVenue.Id;
 
                 if (!TryResolveCoordinates(incomingVenue, existingVenue.Coordinates, out var coordinates, out var coordError))
                 {
                     logger.LogWarning(
                         "Skipping venue sync for {ProviderName}/{ProviderId}: {ErrorCode}",
                         providerName,
-                        incomingVenue.ProviderId,
+                        incomingVenue.ExternalId,
                         coordError);
                     continue;
                 }
@@ -156,7 +156,7 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
                     logger.LogWarning(
                         "Skipping venue sync for {ProviderName}/{ProviderId}: {ErrorCode}",
                         providerName,
-                        incomingVenue.ProviderId,
+                        incomingVenue.ExternalId,
                         addressError);
                     continue;
                 }
@@ -167,7 +167,7 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
                     logger.LogInformation(
                         "Venue {ProviderName}/{ProviderId} was skipped during sync: {ErrorCode}",
                         providerName,
-                        incomingVenue.ProviderId,
+                        incomingVenue.ExternalId,
                         syncResult.Error.Code);
                 }
 
@@ -180,7 +180,7 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
             var newVenueResult = Venue.CreateFromProvider(
                 incomingVenue.Name,
                 providerName,
-                incomingVenue.ProviderId,
+                incomingVenue.ExternalId,
                 newAddress,
                 newCoordinates);
 
@@ -189,19 +189,16 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
                 logger.LogWarning(
                     "Failed to create venue {ProviderName}/{ProviderId}: {ErrorCode}",
                     providerName,
-                    incomingVenue.ProviderId,
+                    incomingVenue.ExternalId,
                     newVenueResult.Error.Code);
                 continue;
             }
 
             venueRepository.Add(newVenueResult.Value);
-            venueIdMap[incomingVenue.ProviderId] = newVenueResult.Value.Id;
+            venueIdMap[incomingVenue.ExternalId] = newVenueResult.Value.Id;
         }
     }
 
-    /// <summary>
-    /// Resolves venue coordinates from the provider payload, preserving existing values when the payload omits them.
-    /// </summary>
     private static bool TryResolveCoordinates(
         ExternalFixtureVenueDto incomingVenue,
         Coordinates? existing,
@@ -228,10 +225,6 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
         return true;
     }
 
-    /// <summary>
-    /// Resolves a venue address, merging provider fields with any richer existing address
-    /// so a country-only payload cannot wipe city/street.
-    /// </summary>
     private static bool TryResolveAddress(
         ExternalFixtureVenueDto incomingVenue,
         Address? existing,
@@ -275,8 +268,8 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
 
     private SyncBatchResultDto ProcessFixtures(
         SportId sportId,
-        LeagueId? leagueId,
-        SeasonId? seasonId,
+        LeagueId leagueId,
+        IReadOnlyDictionary<string, Guid> seasonMap,
         string providerName,
         IReadOnlyList<ExternalFixtureDto> incomingFixtures,
         Dictionary<string, Fixture> existingFixtures,
@@ -291,12 +284,20 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
         {
             VenueId? venueId = null;
             if (incomingFixture.Venue is not null &&
-                venueIdMap.TryGetValue(incomingFixture.Venue.ProviderId, out var mappedVenueId))
+                venueIdMap.TryGetValue(incomingFixture.Venue.ExternalId, out var mappedVenueId))
             {
                 venueId = mappedVenueId;
             }
 
-            if (existingFixtures.TryGetValue(incomingFixture.ProviderId, out var fixture))
+            // Dynamiczne mapowanie sezonu na podstawie nazwy dostarczonej w locie (np. "2025-2026")
+            SeasonId? seasonId = null;
+            if (!string.IsNullOrWhiteSpace(incomingFixture.SeasonName) &&
+                seasonMap.TryGetValue(incomingFixture.SeasonName, out var mappedSeasonGuid))
+            {
+                seasonId = SeasonId.FromValue(mappedSeasonGuid);
+            }
+
+            if (existingFixtures.TryGetValue(incomingFixture.ExternalId, out var fixture))
             {
                 var syncResult = fixture.SyncFromProvider(
                     sportId,
@@ -313,18 +314,18 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
                     {
                         skipped++;
                         logger.LogInformation(
-                            "Fixture {ProviderName}/{ProviderId} skipped during sync: {ErrorCode}",
+                            "Fixture {ProviderName}/{ExternalId} skipped during sync: {ErrorCode}",
                             providerName,
-                            incomingFixture.ProviderId,
+                            incomingFixture.ExternalId,
                             syncResult.Error.Code);
                     }
                     else
                     {
                         failed++;
                         logger.LogWarning(
-                            "Fixture {ProviderName}/{ProviderId} sync failed: {ErrorCode}",
+                            "Fixture {ProviderName}/{ExternalId} sync failed: {ErrorCode}",
                             providerName,
-                            incomingFixture.ProviderId,
+                            incomingFixture.ExternalId,
                             syncResult.Error.Code);
                     }
 
@@ -342,15 +343,15 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
                 incomingFixture.Name,
                 incomingFixture.StartDate,
                 providerName,
-                incomingFixture.ProviderId);
+                incomingFixture.ExternalId);
 
             if (newFixtureResult.IsFailure)
             {
                 failed++;
                 logger.LogWarning(
-                    "Failed to create fixture {ProviderName}/{ProviderId}: {ErrorCode}",
+                    "Failed to create fixture {ProviderName}/{ExternalId}: {ErrorCode}",
                     providerName,
-                    incomingFixture.ProviderId,
+                    incomingFixture.ExternalId,
                     newFixtureResult.Error.Code);
                 continue;
             }
@@ -369,9 +370,9 @@ internal sealed class SyncFixturesBatchChunkCommandHandler(
             {
                 failed++;
                 logger.LogWarning(
-                    "Fixture {ProviderName}/{ProviderId} initial sync failed: {ErrorCode}",
+                    "Fixture {ProviderName}/{ExternalId} initial sync failed: {ErrorCode}",
                     providerName,
-                    incomingFixture.ProviderId,
+                    incomingFixture.ExternalId,
                     applyResult.Error.Code);
                 continue;
             }

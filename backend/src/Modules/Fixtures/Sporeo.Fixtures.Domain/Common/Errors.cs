@@ -191,6 +191,13 @@ public static class Errors
             new("League.NotFound", $"League with ID '{leagueId}' was not found.");
 
         /// <summary>
+        /// Returned when a league with the specified external identifier cannot be found.
+        /// </summary>
+        /// <param name="externalLeagueId">The external identifier of the league that could not be found.</param>
+        public static Error NotFound(string externalLeagueId) =>
+            new("League.NotFound", $"League with external ID '{externalLeagueId}' was not found.");
+
+        /// <summary>
         /// Returned when a league is associated with a sport that does not match the expected sport.
         /// </summary>
         public static readonly Error InconsistentHierarchy = new("League.InconsistentHierarchy", "The specified League does not belong to the provided Sport.");

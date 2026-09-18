@@ -7,8 +7,8 @@ namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 /// Synchronizes a single isolated chunk of fixtures within one unit of work.
 /// </summary>
 internal sealed record SyncFixturesBatchChunkCommand(
-    Guid SportId,
-    Guid? LeagueId,
-    Guid? SeasonId,
     string ProviderName,
+    Guid SportId,
+    Guid LeagueId,
+    IReadOnlyDictionary<string, Guid> SeasonMap,
     IReadOnlyList<ExternalFixtureDto> Fixtures) : ICommand<SyncBatchResultDto>;

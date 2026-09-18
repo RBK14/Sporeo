@@ -38,20 +38,46 @@ internal sealed class TheSportsDbClient(
     /// <inheritdoc />
     public string ProviderName => "TheSportsDB";
 
-    /// <inheritdoc />
-    public async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchFixturesAsync(
-        string externalLeagueId,
-        string? externalSeasonId,
-        SyncMode syncMode,
-        CancellationToken cancellationToken = default)
+    public async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchShortTermFixturesAsync(
+        string leagueId,
+        CancellationToken cancellationToken)
     {
-        return syncMode switch
+        logger.LogInformation("Running short term sync for league {LeagueId}.", leagueId);
+
+        var pastTask = FetchAndMapFixturesAsync("eventspastleague.php", leagueId, seasonId: null, cancellationToken);
+        var nextTask = FetchAndMapFixturesAsync("eventsnextleague.php", leagueId, seasonId: null, cancellationToken);
+
+        await Task.WhenAll(pastTask, nextTask);
+
+        var pastResult = await pastTask;
+        if (pastResult.IsFailure)
+            return pastResult;
+
+        var nextResult = await nextTask;
+        if (nextResult.IsFailure)
+            return nextResult;
+
+        var combined = pastResult.Value
+            .Concat(nextResult.Value)
+            .DistinctBy(fixture => fixture.ExternalId)
+            .ToList();
+
+        return Result.Success<IReadOnlyList<ExternalFixtureDto>>(combined);
+    }
+
+    public async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchLongTermFixturesAsync(
+        string leagueId,
+        string seasonId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(seasonId))
         {
-            SyncMode.ShortTerm => await FetchShortTermAsync(externalLeagueId, cancellationToken),
-            SyncMode.LongTerm => await FetchLongTermAsync(externalLeagueId, externalSeasonId, cancellationToken),
-            _ => Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
-                new Error("ExternalFixtures.UnsupportedSyncMode", $"Unsupported sync mode '{syncMode}'."))
-        };
+            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
+                new Error("ExternalFixtures.MissingSeasonId", "Long term sync requires ExternalSeasonId."));
+        }
+
+        logger.LogInformation("Running long term sync (season {SeasonId}) for league {LeagueId}.", seasonId, leagueId);
+        return await FetchAndMapFixturesAsync("eventsseason.php", leagueId, seasonId, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -102,49 +128,7 @@ internal sealed class TheSportsDbClient(
         return Result.Success<IReadOnlyList<ExternalLeagueDto>>(mapped);
     }
 
-    private async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchShortTermAsync(
-        string leagueId,
-        CancellationToken cancellationToken)
-    {
-        logger.LogInformation("Running short term sync for league {LeagueId}.", leagueId);
-
-        var pastTask = FetchAndMapAsync("eventspastleague.php", leagueId, seasonId: null, cancellationToken);
-        var nextTask = FetchAndMapAsync("eventsnextleague.php", leagueId, seasonId: null, cancellationToken);
-
-        await Task.WhenAll(pastTask, nextTask);
-
-        var pastResult = await pastTask;
-        if (pastResult.IsFailure)
-            return pastResult;
-
-        var nextResult = await nextTask;
-        if (nextResult.IsFailure)
-            return nextResult;
-
-        var combined = pastResult.Value
-            .Concat(nextResult.Value)
-            .DistinctBy(fixture => fixture.ProviderId)
-            .ToList();
-
-        return Result.Success<IReadOnlyList<ExternalFixtureDto>>(combined);
-    }
-
-    private async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchLongTermAsync(
-        string leagueId,
-        string? seasonId,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(seasonId))
-        {
-            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
-                new Error("ExternalFixtures.MissingSeasonId", "Long term sync requires ExternalSeasonId."));
-        }
-
-        logger.LogInformation("Running long term sync (season {SeasonId}) for league {LeagueId}.", seasonId, leagueId);
-        return await FetchAndMapAsync("eventsseason.php", leagueId, seasonId, cancellationToken);
-    }
-
-    private async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchAndMapAsync(
+    private async Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchAndMapFixturesAsync(
         string relativePath,
         string leagueId,
         string? seasonId,
@@ -285,7 +269,7 @@ internal sealed class TheSportsDbClient(
             var country = string.IsNullOrWhiteSpace(apiEvent.StrCountry) ? null : apiEvent.StrCountry.Trim();
 
             venueDto = new ExternalFixtureVenueDto(
-                ProviderId: venueProviderId,
+                ExternalId: venueProviderId,
                 ProviderName: ProviderName,
                 Name: apiEvent.StrVenue,
                 Street: null,
@@ -296,9 +280,10 @@ internal sealed class TheSportsDbClient(
         }
 
         return MapResult.Mapped(new ExternalFixtureDto(
-            ProviderId: apiEvent.IdEvent,
+            ExternalId: apiEvent.IdEvent,
             ProviderName: ProviderName,
             Name: string.IsNullOrWhiteSpace(apiEvent.StrEvent) ? "Unknown Match" : apiEvent.StrEvent,
+            SeasonName: string.IsNullOrWhiteSpace(apiEvent.StrSeason) ? "Unknown Season" : apiEvent.StrSeason,
             StartDate: startDate,
             Status: MapFixtureStatus(apiEvent.StrStatus, apiEvent.IdEvent, relativePath),
             Venue: venueDto));
@@ -371,14 +356,22 @@ internal sealed class TheSportsDbClient(
     {
         switch (apiStatus)
         {
-            case "Match Finished":
+            case "FT":
+            case "AET":
+            case "PEN":
                 return FixtureStatus.Finished;
-            case "Not Started":
+
+            case "NS":
                 return FixtureStatus.Scheduled;
-            case "Postponed":
+
+            case "PST":
+            case "POST":
                 return FixtureStatus.Postponed;
-            case "Cancelled":
+
+            case "CANC":
+            case "ABD":
                 return FixtureStatus.Cancelled;
+
             default:
                 FixturesIntegrationMetrics.UnknownStatuses.Add(
                     1,

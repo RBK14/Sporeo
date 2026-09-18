@@ -39,7 +39,7 @@ public sealed class SyncFixturesJobTests
         sender.Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result.Success(SyncBatchResultDto.Create(fixtures.Count, 0, 0, 0)));
 
-        var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
+        var job = new ShortTermSyncJob([client], sender, NullLogger<ShortTermSyncJob>.Instance);
         var context = CreateContext();
 
         await job.Execute(context, CancellationToken.None);
@@ -63,7 +63,7 @@ public sealed class SyncFixturesJobTests
                 new Error("ExternalFixtures.Unauthorized", "Denied")));
 
         var sender = Substitute.For<ISender>();
-        var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
+        var job = new ShortTermSyncJob([client], sender, NullLogger<ShortTermSyncJob>.Instance);
 
         var act = async () => await job.Execute(CreateContext(), CancellationToken.None);
 
@@ -92,7 +92,7 @@ public sealed class SyncFixturesJobTests
         sender.Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>())
             .Returns(Result.Success(SyncBatchResultDto.Create(1, 0, 0, failed: 1)));
 
-        var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
+        var job = new ShortTermSyncJob([client], sender, NullLogger<ShortTermSyncJob>.Instance);
 
         var act = async () => await job.Execute(CreateContext(), CancellationToken.None);
 
@@ -112,7 +112,7 @@ public sealed class SyncFixturesJobTests
             .Returns(Result.Success<IReadOnlyList<ExternalFixtureDto>>([]));
 
         var sender = Substitute.For<ISender>();
-        var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
+        var job = new ShortTermSyncJob([client], sender, NullLogger<ShortTermSyncJob>.Instance);
 
         await job.Execute(CreateContext(), CancellationToken.None);
 
@@ -133,7 +133,7 @@ public sealed class SyncFixturesJobTests
                 new Error("ExternalFixtures.InvalidPayload", "Provider returned an invalid payload.")));
 
         var sender = Substitute.For<ISender>();
-        var job = new SyncFixturesJob([client], sender, NullLogger<SyncFixturesJob>.Instance);
+        var job = new ShortTermSyncJob([client], sender, NullLogger<ShortTermSyncJob>.Instance);
 
         var act = async () => await job.Execute(CreateContext(), CancellationToken.None);
 

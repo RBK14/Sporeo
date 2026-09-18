@@ -21,4 +21,6 @@ public interface ILeagueReadStore
         string providerName,
         IEnumerable<string> leagueProviderIds,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<MonitoredLeagueForSyncDto>> GetMonitoredLeaguesForSyncAsync(CancellationToken cancellationToken = default);
 }

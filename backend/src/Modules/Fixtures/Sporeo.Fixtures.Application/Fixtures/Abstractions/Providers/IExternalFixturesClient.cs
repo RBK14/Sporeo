@@ -12,20 +12,12 @@ public interface IExternalFixturesClient
     /// </summary>
     string ProviderName { get; }
 
-    /// <summary>
-    /// Fetches fixtures for the specified league and optional season.
-    /// </summary>
-    /// <param name="externalLeagueId">The provider league identifier.</param>
-    /// <param name="externalSeasonId">The provider season identifier required for long-term sync.</param>
-    /// <param name="syncMode">The synchronization mode.</param>
-    /// <param name="cancellationToken">A token to cancel the operation.</param>
-    /// <returns>
-    /// A successful result containing fixtures (possibly empty), or a typed failure for
-    /// unauthorized, rate-limited, transient, or permanent provider errors.
-    /// </returns>
-    Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchFixturesAsync(
+    Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchShortTermFixturesAsync(
         string externalLeagueId,
-        string? externalSeasonId,
-        SyncMode syncMode,
+        CancellationToken cancellationToken = default);
+
+    Task<Result<IReadOnlyList<ExternalFixtureDto>>> FetchLongTermFixturesAsync(
+        string externalLeagueId,
+        string externalSeasonId,
         CancellationToken cancellationToken = default);
 }

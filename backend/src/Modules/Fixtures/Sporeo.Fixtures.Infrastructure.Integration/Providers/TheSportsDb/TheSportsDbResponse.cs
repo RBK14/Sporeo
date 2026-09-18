@@ -13,6 +13,7 @@ internal sealed record TheSportsDbEvent(
     [property: JsonPropertyName("strTime")] string? StrTime,
     [property: JsonPropertyName("idHomeTeam")] string? IdHomeTeam,
     [property: JsonPropertyName("idAwayTeam")] string? IdAwayTeam,
+    [property: JsonPropertyName("strSeason")] string? StrSeason,
     [property: JsonPropertyName("strStatus")] string? StrStatus,
     [property: JsonPropertyName("idVenue")] string? IdVenue,
     [property: JsonPropertyName("strVenue")] string? StrVenue,

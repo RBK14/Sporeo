@@ -3,6 +3,7 @@ using Sporeo.Fixtures.Infrastructure.Persistence.Context;
 using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
 
@@ -19,6 +20,11 @@ internal sealed class SeasonRepository(FixturesDbContext dbContext) : ISeasonRep
             season => season.ExternalProviderName == providerName
                 && season.ExternalProviderId == providerId,
             cancellationToken);
+
+    public Task<List<Season>> GetByLeagueIdAsync(
+        LeagueId leagueId,
+        CancellationToken cancellationToken = default) =>
+        dbContext.Seasons.Where(season => season.LeagueId == leagueId).ToListAsync(cancellationToken);
 
     public void Add(Season season) => dbContext.Seasons.Add(season);
 }

@@ -1,3 +1,4 @@
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 
@@ -27,6 +28,16 @@ public interface ISeasonRepository
     Task<Season?> GetByExternalProviderAsync(
         string providerName,
         string providerId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all seasons associated with a given league.
+    /// </summary>
+    /// <param name="leagueId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<List<Season>> GetByLeagueIdAsync(
+        LeagueId leagueId,
         CancellationToken cancellationToken = default);
 
     /// <summary>

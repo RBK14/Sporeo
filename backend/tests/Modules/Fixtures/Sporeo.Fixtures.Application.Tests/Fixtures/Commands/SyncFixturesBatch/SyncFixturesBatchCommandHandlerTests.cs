@@ -21,12 +21,13 @@ public sealed class SyncFixturesBatchChunkCommandHandlerTests
             "valid-1",
             "TheSportsDB",
             "Home vs Away",
+            "2025-2026",
             DateTimeOffset.UtcNow.AddDays(1),
             FixtureStatus.Scheduled,
             null);
         var invalidFixture = validFixture with
         {
-            ProviderId = "invalid-1",
+            ExternalId = "invalid-1",
             Name = " "
         };
 
