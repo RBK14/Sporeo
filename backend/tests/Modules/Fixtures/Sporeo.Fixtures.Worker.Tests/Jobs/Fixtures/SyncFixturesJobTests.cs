@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Quartz;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Worker.Jobs.Fixtures;
@@ -18,9 +18,10 @@ public sealed class SyncFixturesJobTests
     {
         var fixtures = Enumerable.Range(1, SyncFixturesBatchCommand.ChunkSize + 25)
             .Select(index => new ExternalFixtureDto(
-                index.ToString(),
                 "TheSportsDB",
+                index.ToString(),
                 $"Match {index}",
+                "2025-2026",
                 DateTimeOffset.UtcNow,
                 FixtureStatus.Scheduled,
                 null))
@@ -28,11 +29,7 @@ public sealed class SyncFixturesJobTests
 
         var client = Substitute.For<IExternalFixturesClient>();
         client.ProviderName.Returns("TheSportsDB");
-        client.FetchFixturesAsync(
-                Arg.Any<string>(),
-                Arg.Any<string?>(),
-                Arg.Any<SyncMode>(),
-                Arg.Any<CancellationToken>())
+        client.FetchShortTermFixturesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Success<IReadOnlyList<ExternalFixtureDto>>(fixtures));
 
         var sender = Substitute.For<ISender>();
@@ -45,7 +42,10 @@ public sealed class SyncFixturesJobTests
         await job.Execute(context, CancellationToken.None);
 
         await sender.Received(1).Send(
-            Arg.Is<SyncFixturesBatchCommand>(command => command.Fixtures.Count == fixtures.Count),
+            Arg.Is<SyncFixturesBatchCommand>(command =>
+                command.Fixtures.Count == fixtures.Count &&
+                command.ProviderName == "TheSportsDB" &&
+                command.ExternalLeagueId == "4328"),
             Arg.Any<CancellationToken>());
     }
 
@@ -54,11 +54,7 @@ public sealed class SyncFixturesJobTests
     {
         var client = Substitute.For<IExternalFixturesClient>();
         client.ProviderName.Returns("TheSportsDB");
-        client.FetchFixturesAsync(
-                Arg.Any<string>(),
-                Arg.Any<string?>(),
-                Arg.Any<SyncMode>(),
-                Arg.Any<CancellationToken>())
+        client.FetchShortTermFixturesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
                 new Error("ExternalFixtures.Unauthorized", "Denied")));
 
@@ -76,16 +72,12 @@ public sealed class SyncFixturesJobTests
     {
         var fixtures = new List<ExternalFixtureDto>
         {
-            new("1", "TheSportsDB", "Home vs Away", DateTimeOffset.UtcNow, FixtureStatus.Scheduled, null)
+            new("TheSportsDB", "1", "Home vs Away", "2025-2026", DateTimeOffset.UtcNow, FixtureStatus.Scheduled, null)
         };
 
         var client = Substitute.For<IExternalFixturesClient>();
         client.ProviderName.Returns("TheSportsDB");
-        client.FetchFixturesAsync(
-                Arg.Any<string>(),
-                Arg.Any<string?>(),
-                Arg.Any<SyncMode>(),
-                Arg.Any<CancellationToken>())
+        client.FetchShortTermFixturesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Success<IReadOnlyList<ExternalFixtureDto>>(fixtures));
 
         var sender = Substitute.For<ISender>();
@@ -104,11 +96,7 @@ public sealed class SyncFixturesJobTests
     {
         var client = Substitute.For<IExternalFixturesClient>();
         client.ProviderName.Returns("TheSportsDB");
-        client.FetchFixturesAsync(
-                Arg.Any<string>(),
-                Arg.Any<string?>(),
-                Arg.Any<SyncMode>(),
-                Arg.Any<CancellationToken>())
+        client.FetchShortTermFixturesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Success<IReadOnlyList<ExternalFixtureDto>>([]));
 
         var sender = Substitute.For<ISender>();
@@ -124,11 +112,7 @@ public sealed class SyncFixturesJobTests
     {
         var client = Substitute.For<IExternalFixturesClient>();
         client.ProviderName.Returns("TheSportsDB");
-        client.FetchFixturesAsync(
-                Arg.Any<string>(),
-                Arg.Any<string?>(),
-                Arg.Any<SyncMode>(),
-                Arg.Any<CancellationToken>())
+        client.FetchShortTermFixturesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
                 new Error("ExternalFixtures.InvalidPayload", "Provider returned an invalid payload.")));
 
@@ -145,13 +129,8 @@ public sealed class SyncFixturesJobTests
     {
         var dataMap = new JobDataMap
         {
-            ["SyncMode"] = SyncMode.ShortTerm.ToString(),
             ["ProviderName"] = "TheSportsDB",
-            ["ExternalLeagueId"] = "4328",
-            ["ExternalSeasonId"] = string.Empty,
-            ["SportId"] = Guid.Parse("11111111-1111-1111-1111-111111111111").ToString(),
-            ["LeagueId"] = string.Empty,
-            ["SeasonId"] = string.Empty
+            ["ExternalLeagueId"] = "4328"
         };
 
         var context = Substitute.For<IJobExecutionContext>();

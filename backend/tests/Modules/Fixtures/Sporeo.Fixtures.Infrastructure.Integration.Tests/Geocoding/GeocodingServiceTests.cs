@@ -3,9 +3,9 @@ using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Time.Testing;
 using NSubstitute;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
+using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
+using Sporeo.Fixtures.Application.Venues.Abstractions;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
 using Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
@@ -19,9 +19,9 @@ public sealed class GeocodingServiceTests
     {
         var coordinates = Coordinates.Create(52.2, 21.0).Value;
         var cached = new GeocodedLocation(coordinates, Address.Create(null, "Warsaw", "Poland").Value);
-        var cache = Substitute.For<IGeocodingCache>();
-        cache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(new GeocodingCacheLookup(true, cached));
+        var cache = Substitute.For<ICacheService>();
+        cache.GetAsync<NominatimGeocodingService.GeocodingCacheEntry>(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(NominatimGeocodingService.GeocodingCacheEntry.Found(cached));
 
         var rateLimiter = Substitute.For<IGeocodingRateLimiter>();
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
@@ -38,9 +38,9 @@ public sealed class GeocodingServiceTests
     [Fact]
     public async Task GetVenueLocationAsync_WhenCacheMiss_ShouldSkipHttpAndReturnNotFound()
     {
-        var cache = Substitute.For<IGeocodingCache>();
-        cache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(new GeocodingCacheLookup(false, null));
+        var cache = Substitute.For<ICacheService>();
+        cache.GetAsync<NominatimGeocodingService.GeocodingCacheEntry>(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(NominatimGeocodingService.GeocodingCacheEntry.Miss());
 
         var rateLimiter = Substitute.For<IGeocodingRateLimiter>();
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
@@ -57,9 +57,9 @@ public sealed class GeocodingServiceTests
     [Fact]
     public async Task GetVenueLocationAsync_WhenEmptyResults_ShouldCacheNegativeResult()
     {
-        var cache = Substitute.For<IGeocodingCache>();
-        cache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((GeocodingCacheLookup?)null);
+        var cache = Substitute.For<ICacheService>();
+        cache.GetAsync<NominatimGeocodingService.GeocodingCacheEntry>(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((NominatimGeocodingService.GeocodingCacheEntry?)null);
 
         var rateLimiter = Substitute.For<IGeocodingRateLimiter>();
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
@@ -72,19 +72,19 @@ public sealed class GeocodingServiceTests
 
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be("Geocoding.NotFound");
-        await cache.Received(1).SetMissAsync(
+        await cache.Received(1).SetAsync(
             Arg.Is<string>(key => key.Contains("ghost arena", StringComparison.Ordinal)),
-            Arg.Any<DateTimeOffset>(),
+            Arg.Is<NominatimGeocodingService.GeocodingCacheEntry>(entry => !entry.IsFound),
+            Arg.Any<TimeSpan?>(),
             Arg.Any<CancellationToken>());
-        await cache.DidNotReceiveWithAnyArgs().SetFoundAsync(default!, default!, default, default);
     }
 
     [Fact]
     public async Task GetVenueLocationAsync_WhenFound_ShouldParseResultCacheAndSendUserAgent()
     {
-        var cache = Substitute.For<IGeocodingCache>();
-        cache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((GeocodingCacheLookup?)null);
+        var cache = Substitute.For<ICacheService>();
+        cache.GetAsync<NominatimGeocodingService.GeocodingCacheEntry>(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((NominatimGeocodingService.GeocodingCacheEntry?)null);
 
         var rateLimiter = Substitute.For<IGeocodingRateLimiter>();
         HttpRequestMessage? captured = null;
@@ -109,19 +109,19 @@ public sealed class GeocodingServiceTests
         captured.Should().NotBeNull();
         captured!.RequestUri!.ToString().Should().Contain("q=");
         await rateLimiter.Received(1).WaitAsync(Arg.Any<CancellationToken>());
-        await cache.Received(1).SetFoundAsync(
+        await cache.Received(1).SetAsync(
             Arg.Any<string>(),
-            Arg.Any<GeocodedLocation>(),
-            Arg.Any<DateTimeOffset>(),
+            Arg.Is<NominatimGeocodingService.GeocodingCacheEntry>(entry => entry.IsFound),
+            Arg.Any<TimeSpan?>(),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task GetVenueLocationAsync_With429_ShouldReturnRateLimitedWithoutCaching()
     {
-        var cache = Substitute.For<IGeocodingCache>();
-        cache.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((GeocodingCacheLookup?)null);
+        var cache = Substitute.For<ICacheService>();
+        cache.GetAsync<NominatimGeocodingService.GeocodingCacheEntry>(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((NominatimGeocodingService.GeocodingCacheEntry?)null);
 
         var rateLimiter = Substitute.For<IGeocodingRateLimiter>();
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.TooManyRequests));
@@ -131,13 +131,12 @@ public sealed class GeocodingServiceTests
 
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be("Geocoding.RateLimited");
-        await cache.DidNotReceiveWithAnyArgs().SetMissAsync(default!, default, default);
-        await cache.DidNotReceiveWithAnyArgs().SetFoundAsync(default!, default!, default, default);
+        await cache.DidNotReceiveWithAnyArgs().SetAsync<object>(default!, default!, default, default);
     }
 
     private static NominatimGeocodingService CreateSut(
         HttpMessageHandler handler,
-        IGeocodingCache cache,
+        ICacheService cache,
         IGeocodingRateLimiter rateLimiter)
     {
         var httpClient = new HttpClient(handler)
@@ -160,7 +159,6 @@ public sealed class GeocodingServiceTests
             cache,
             rateLimiter,
             options,
-            new FakeTimeProvider(DateTimeOffset.UtcNow),
             NullLogger<NominatimGeocodingService>.Instance);
     }
 

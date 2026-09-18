@@ -8,8 +8,8 @@ using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
 using Sporeo.Fixtures.Application;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
+using Sporeo.Fixtures.Application.Venues.Abstractions;
 using Sporeo.Fixtures.Infrastructure.Integration;
 using Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 using Sporeo.Fixtures.Infrastructure.Persistence;
@@ -34,26 +34,21 @@ public sealed class WorkerDependencyInjectionTests
         services.GetRequiredService<IGeocodingRateLimiter>().Should().NotBeNull();
         services.GetRequiredService<IExternalFixturesClient>().Should().NotBeNull();
         services.GetRequiredService<IOutboxProcessor>().Should().NotBeNull();
-        services.GetRequiredService<IOptions<SyncJobsRootOptions>>().Value.Jobs.Should().BeEmpty();
+        services.GetRequiredService<IOptions<WorkerOptions>>().Value.DispatcherCron.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]
-    public void SyncJobs_WithUnknownProvider_ShouldFailValidation()
+    public void WorkerOptions_WithInvalidCron_ShouldFailValidation()
     {
         using var host = CreateHost(values =>
         {
-            values["SyncJobs:Jobs:0:JobId"] = "premier-league";
-            values["SyncJobs:Jobs:0:CronSchedule"] = "0 0/15 * * * ?";
-            values["SyncJobs:Jobs:0:SyncMode"] = "ShortTerm";
-            values["SyncJobs:Jobs:0:ProviderName"] = "UnknownProvider";
-            values["SyncJobs:Jobs:0:ExternalLeagueId"] = "4328";
-            values["SyncJobs:Jobs:0:SportId"] = "11111111-1111-1111-1111-111111111111";
+            values["Worker:DispatcherCron"] = "not-a-cron";
         });
 
-        var act = () => _ = host.Services.GetRequiredService<IOptions<SyncJobsRootOptions>>().Value;
+        var act = () => _ = host.Services.GetRequiredService<IOptions<WorkerOptions>>().Value;
 
         act.Should().Throw<OptionsValidationException>()
-            .Which.Message.Should().Contain("UnknownProvider");
+            .Which.Message.Should().Contain(nameof(WorkerOptions.DispatcherCron));
     }
 
     private static IHost CreateHost(Action<Dictionary<string, string?>>? configure = null)
@@ -63,6 +58,9 @@ public sealed class WorkerDependencyInjectionTests
             ["ConnectionStrings:fixtures-db"] = "Server=127.0.0.1,1433;Database=fixtures;User ID=sa;Password=placeholder;TrustServerCertificate=true",
             ["ConnectionStrings:quartz-db"] = "Server=127.0.0.1,1433;Database=quartz;User ID=sa;Password=placeholder;TrustServerCertificate=true",
             ["ConnectionStrings:redis"] = "localhost:6379",
+            ["Worker:DispatcherCron"] = "0 30 * * * ?",
+            ["Worker:LongTermSyncCron"] = "0 0 3 * * ?",
+            ["Worker:SeasonsSyncCron"] = "0 0 2 ? * MON",
             ["ExternalProviders:TheSportsDb:BaseUrl"] = "https://www.thesportsdb.com/api/v1/json",
             ["ExternalProviders:TheSportsDb:ApiKey"] = "test-api-key",
             ["ExternalProviders:Nominatim:BaseUrl"] = "https://nominatim.openstreetmap.org",

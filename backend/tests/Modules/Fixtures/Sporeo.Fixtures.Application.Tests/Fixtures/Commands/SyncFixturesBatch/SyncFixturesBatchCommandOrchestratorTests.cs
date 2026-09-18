@@ -4,15 +4,16 @@ using Microsoft.Extensions.Logging.Abstractions;
 using MediatR;
 using NSubstitute;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Abstractions.Persistence;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatchChunk;
+using Sporeo.Fixtures.Application.Leagues.Data;
 using Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
+using Sporeo.Fixtures.Application.Abstractions;
 
 namespace Sporeo.Fixtures.Application.Tests.Fixtures.Commands;
 

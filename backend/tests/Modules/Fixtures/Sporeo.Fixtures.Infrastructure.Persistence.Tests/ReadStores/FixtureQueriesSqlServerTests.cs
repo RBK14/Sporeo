@@ -17,7 +17,7 @@ using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Persistence;
-using Sporeo.Fixtures.Infrastructure.Persistence.Context;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;
 
@@ -67,7 +67,7 @@ public sealed class FixtureQueriesSqlServerTests
 
         var byLeague = await sender.Send(new GetFixturesQuery(
             new PaginationParams(1, 10),
-            new FixtureFilters(LeagueId: seed.FixtureWarsawLeague.LeagueId!.Value)));
+            new FixtureFilters(LeagueId: seed.FixtureWarsawLeague.LeagueId)));
 
         byLeague.IsSuccess.Should().BeTrue();
         byLeague.Value.Items.Should().ContainSingle()
@@ -253,11 +253,7 @@ public sealed class FixtureQueriesSqlServerTests
             var leagueActive = League.CreateManually(sportFootball.Id, "Ekstraklasa", "PL").Value;
             var leagueSoftDeleted = League.CreateManually(sportFootball.Id, "Deleted League", "PL").Value;
 
-            var season = Season.CreateManually(
-                leagueActive.Id,
-                "2025/26",
-                new DateTimeOffset(2025, 7, 1, 0, 0, 0, TimeSpan.Zero),
-                new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero)).Value;
+            var season = Season.Create(leagueActive.Id, "2025/26").Value;
 
             var venueWarsaw = Venue.CreateManually(
                 "National Stadium",

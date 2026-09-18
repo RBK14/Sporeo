@@ -12,11 +12,11 @@ using Sporeo.BuildingBlocks.Infrastructure.Persistence.Interceptors;
 using Sporeo.Fixtures.Application;
 using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
 
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Fixtures.Data;
+using Sporeo.Fixtures.Application.Venues.Data;
+using Sporeo.Fixtures.Application.Sports.Data;
+using Sporeo.Fixtures.Application.Leagues.Data;
+using Sporeo.Fixtures.Application.Seasons.Data;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons;
@@ -26,8 +26,8 @@ using Sporeo.Fixtures.Domain.Venues.Events;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Persistence;
 using DomainCoordinates = Sporeo.Fixtures.Domain.Venues.ValueObjects.Coordinates;
-using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
-using Sporeo.Fixtures.Infrastructure.Persistence.Context;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing.Interceptors;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;

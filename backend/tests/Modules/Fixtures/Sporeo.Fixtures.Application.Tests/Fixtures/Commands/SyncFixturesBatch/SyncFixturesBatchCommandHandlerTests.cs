@@ -1,10 +1,11 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
+using Sporeo.Fixtures.Application.Fixtures.Data;
+using Sporeo.Fixtures.Application.Venues.Data;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
+using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatchChunk;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;

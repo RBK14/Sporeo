@@ -2,7 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
-using Sporeo.Fixtures.Infrastructure.Integration.Geocoding;
+using Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Tests.Geocoding;
 
