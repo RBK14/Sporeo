@@ -1,9 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Options;
 using Polly;
-using Polly.Retry;
 using Polly.Timeout;
 using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
@@ -22,7 +20,7 @@ namespace Sporeo.Fixtures.Infrastructure.Integration;
 /// </summary>
 public static class DependencyInjection
 {
-    private static readonly TimeSpan TotalRequestTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan TotalRequestTimeout = TimeSpan.FromSeconds(90);
     private static readonly TimeSpan AttemptTimeout = TimeSpan.FromSeconds(5);
     private static readonly string[] PlaceholderUserAgents =
     [
@@ -65,6 +63,21 @@ public static class DependencyInjection
                 "ExternalProviders:TheSportsDb requires an HTTPS BaseUrl and ApiKey.")
             .ValidateOnStart();
 
+        services.AddSingleton(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<TheSportsDbOptions>>().Value;
+
+            return new TokenBucketRateLimiter(new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = options.RequestsPerMinute,
+                TokensPerPeriod = options.RequestsPerMinute,
+                ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                QueueLimit = 1000,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+            });
+        });
+
+        services.AddTransient<TheSportsDbRateLimitingHandler>();
         services.AddTransient<TheSportsDbApiKeyHandler>();
 
         services.AddHttpClient<TheSportsDbClient>((sp, client) =>
@@ -78,6 +91,7 @@ public static class DependencyInjection
                 client.Timeout = Timeout.InfiniteTimeSpan;
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             })
+            .AddHttpMessageHandler<TheSportsDbRateLimitingHandler>()
             .AddHttpMessageHandler<TheSportsDbApiKeyHandler>()
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
@@ -91,7 +105,7 @@ public static class DependencyInjection
                 options.RateLimiter.DefaultRateLimiterOptions = new ConcurrencyLimiterOptions
                 {
                     PermitLimit = 4,
-                    QueueLimit = 8,
+                    QueueLimit = 10,
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                 };
 

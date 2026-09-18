@@ -1,80 +1,72 @@
 using Microsoft.EntityFrameworkCore;
 using Sporeo.Fixtures.Domain.Leagues;
-using Sporeo.Fixtures.Domain.Seasons;
-using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports;
-using Sporeo.Fixtures.Domain.Sports.ValueObjects;
-using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Persistence.Context;
-using System.Reflection;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Seeding;
 
 internal sealed class FixturesDatabaseSeeder(FixturesDbContext dbContext)
 {
-    private static readonly SportId FootballId =
-        SportId.FromValue(Guid.Parse("11111111-1111-1111-1111-111111111111"));
-
-    private static readonly LeagueId PremierLeagueId =
-        LeagueId.FromValue(Guid.Parse("22222222-2222-2222-2222-222222222222"));
-
-    private static readonly SeasonId PremierLeagueSeasonId =
-        SeasonId.FromValue(Guid.Parse("33333333-3333-3333-3333-333333333333"));
-
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        var football = await dbContext.Sports
-            .SingleOrDefaultAsync(sport => sport.Name == "Football", cancellationToken);
+        const string providerName = "TheSportsDB";
 
-        if (football is null)
-        {
-            football = Sport.Create("Football").Value;
-            SetFixedId(football, FootballId);
-            dbContext.Sports.Add(football);
-        }
-
-        var premierLeague = await dbContext.Leagues
-            .SingleOrDefaultAsync(
-                league => league.SportId == football.Id && league.Name == "Premier League",
+        var soccer = await dbContext.Sports
+            .SingleOrDefaultAsync(sport =>
+                sport.ExternalProviderName == providerName &&
+                sport.ExternalProviderId == "102",
                 cancellationToken);
 
-        if (premierLeague is null)
+        if (soccer is null)
         {
-            premierLeague = League.CreateManually(football.Id, "Premier League", "England").Value;
-            SetFixedId(premierLeague, PremierLeagueId);
-            dbContext.Leagues.Add(premierLeague);
-        }
-
-        var season = await dbContext.Seasons.SingleOrDefaultAsync(
-            season => season.LeagueId == premierLeague.Id && season.Name == "2026-2027",
-            cancellationToken);
-
-        if (season is null)
-        {
-            season = Season.CreateManually(
-                premierLeague.Id,
-                "2026-2027",
-                new DateTimeOffset(2026, 8, 1, 0, 0, 0, TimeSpan.Zero),
-                new DateTimeOffset(2027, 5, 31, 0, 0, 0, TimeSpan.Zero)).Value;
-
-            SetFixedId(season, PremierLeagueSeasonId);
-            dbContext.Seasons.Add(season);
+            soccer = Sport.Create("Soccer", providerName, "102").Value;
+            dbContext.Sports.Add(soccer);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-    }
 
-    private static void SetFixedId<TId>(object entity, TId fixedId)
-        where TId : notnull
-    {
-        var idProperty = entity.GetType().GetProperty(
-            "Id",
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-            ?? throw new InvalidOperationException($"Entity '{entity.GetType().Name}' has no Id property.");
 
-        var setter = idProperty.GetSetMethod(nonPublic: true)
-            ?? throw new InvalidOperationException($"Entity '{entity.GetType().Name}' Id property has no setter.");
+        var soccerLeagues = new[]
+        {
+            ("English Premier League", "4328"),
+            ("English League Championship", "4329"),
+            ("Scottish Premier League", "4330"),
+            ("German Bundesliga", "4331"),
+            ("Italian Serie A", "4332")
+        };
 
-        setter.Invoke(entity, [fixedId]);
+        foreach (var (name, providerId) in soccerLeagues)
+        {
+            var league = await dbContext.Leagues
+                .SingleOrDefaultAsync(l =>
+                    l.ExternalProviderName == providerName &&
+                    l.ExternalProviderId == providerId,
+                    cancellationToken);
+
+            if (league is null)
+            {
+                league = League.CreateFromProvider(soccer.Id, name, null, providerName, providerId).Value;
+                dbContext.Leagues.Add(league);
+            }
+
+            // Change the monitoring status for specific leagues based on their provider ID
+            if (providerId == "4329" || providerId == "4330")
+                league.ChangeMonitoringStatus(false);
+        }
+
+        var motorsport = await dbContext.Sports
+            .SingleOrDefaultAsync(sport =>
+                sport.ExternalProviderName == providerName &&
+                sport.ExternalProviderId == "103",
+                cancellationToken);
+
+        if (motorsport is null)
+        {
+            motorsport = Sport.Create("Motorsport", providerName, "103").Value;
+            dbContext.Sports.Add(motorsport);
+        }
+
+
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

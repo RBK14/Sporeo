@@ -23,4 +23,10 @@ public sealed class TheSportsDbOptions
     /// </summary>
     [Required]
     public string ApiKey { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Gets the number of requests per minute allowed.
+    /// </summary>
+    [Range(1, 1000)]
+    public int RequestsPerMinute { get; init; } = 30;
 }

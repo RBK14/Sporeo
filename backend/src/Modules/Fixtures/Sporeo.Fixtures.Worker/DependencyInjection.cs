@@ -62,12 +62,12 @@ public static class DependencyInjection
                 });
             });
 
-            //var dispatcherJobKey = new JobKey(nameof(SyncDispatcherJob), SyncJobsGroup);
-            //q.AddJob<SyncDispatcherJob>(opts => opts.WithIdentity(dispatcherJobKey).StoreDurably());
-            //q.AddTrigger(opts => opts
-            //    .ForJob(dispatcherJobKey)
-            //    .WithIdentity($"{nameof(SyncDispatcherJob)}-trigger", SyncJobsGroup)
-            //    .WithCronSchedule(workerOptions.DispatcherCron));
+            var dispatcherJobKey = new JobKey(nameof(SyncDispatcherJob), SyncJobsGroup);
+            q.AddJob<SyncDispatcherJob>(opts => opts.WithIdentity(dispatcherJobKey).StoreDurably());
+            q.AddTrigger(opts => opts
+                .ForJob(dispatcherJobKey)
+                .WithIdentity($"{nameof(SyncDispatcherJob)}-trigger", SyncJobsGroup)
+                .WithCronSchedule(workerOptions.DispatcherCron));
 
             var shortTermJobKey = new JobKey(nameof(ShortTermSyncJob), SyncJobsGroup);
             q.AddJob<ShortTermSyncJob>(opts => opts.WithIdentity(shortTermJobKey).StoreDurably());
