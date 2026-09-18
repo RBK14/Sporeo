@@ -6,7 +6,7 @@ using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Abstractions.Persistence;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 using Sporeo.Fixtures.Domain.Common;
 
 namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
@@ -16,7 +16,6 @@ namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 /// </summary>
 internal sealed class SyncFixturesBatchCommandHandler(
     ILeagueRepository leagueRepository,
-    ISeasonRepository seasonRepository,
     IServiceScopeFactory scopeFactory,
     IDatabaseExceptionClassifier exceptionClassifier,
     ILogger<SyncFixturesBatchCommandHandler> logger)
@@ -29,12 +28,30 @@ internal sealed class SyncFixturesBatchCommandHandler(
         SyncFixturesBatchCommand request,
         CancellationToken cancellationToken)
     {
-        var league = await leagueRepository.GetByExternalProviderAsync(request.ProviderName, request.ExternalLeagueId, cancellationToken);
+        var league = await leagueRepository.GetByExternalProviderAsync(
+            request.ProviderName,
+            request.ExternalLeagueId,
+            cancellationToken);
+
         if (league is null)
             return Result.Failure<SyncBatchResultDto>(Errors.League.NotFound(request.ExternalLeagueId));
 
-        var seasons = await seasonRepository.GetByLeagueIdAsync(league.Id, cancellationToken);
-        var seasonMap = seasons.ToDictionary(s => s.Name, s => s.Id.Value);
+        var incomingSeasonNames = request.Fixtures
+            .Select(f => f.SeasonName)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct()
+            .ToList();
+
+        var firstUpcomingFixture = request.Fixtures
+            .Where(f => f.StartDate >= DateTimeOffset.UtcNow)
+            .MinBy(f => f.StartDate);
+
+        var seasonMap = await EnsureSeasonsAsync(
+            league.Id.Value,
+            incomingSeasonNames,
+            firstUpcomingFixture?.StartDate,
+            firstUpcomingFixture?.SeasonName,
+            cancellationToken);
 
         var aggregate = SyncBatchResultDto.Empty;
 
@@ -178,6 +195,33 @@ internal sealed class SyncFixturesBatchCommandHandler(
 
         throw lastUniqueViolation ??
               new InvalidOperationException("Unique constraint retries exhausted without capturing an exception.");
+    }
+
+    private async Task<IReadOnlyDictionary<string, Guid>> EnsureSeasonsAsync(
+        Guid leagueId,
+        IReadOnlyList<string> seasonNames,
+        DateTimeOffset? nextFixtureDate,
+        string? nextFixtureSeasonName,
+        CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+
+        var result = await sender.Send(
+            new EnsureSeasonsForSyncCommand(
+                leagueId,
+                seasonNames,
+                nextFixtureDate,
+                nextFixtureSeasonName),
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            throw new InvalidOperationException(
+                $"Season ensure failed: {result.Error.Code} {result.Error.Message}");
+        }
+
+        return result.Value;
     }
 
     private async Task<SyncBatchResultDto> SendChunkAsync(
