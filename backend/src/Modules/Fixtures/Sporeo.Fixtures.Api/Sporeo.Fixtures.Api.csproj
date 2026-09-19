@@ -10,12 +10,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
+    <ProjectReference Include="..\Sporeo.Fixtures.Contracts\Sporeo.Fixtures.Contracts.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure.Integration\Sporeo.Fixtures.Infrastructure.Integration.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Infrastructure.Persistence\Sporeo.Fixtures.Infrastructure.Persistence.csproj" />
     <ProjectReference Include="..\..\..\Platform\Sporeo.ServiceDefaults\Sporeo.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Mapster" Version="10.0.12" />
+    <PackageReference Include="Mapster.DependencyInjection" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
