@@ -25,4 +25,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sporeo.Fixtures.Api.Tests" />
+  </ItemGroup>
+
 </Project>

@@ -26,6 +26,7 @@
   </Folder>
   <Folder Name="/tests/Modules/" />
   <Folder Name="/tests/Modules/Fixtures/">
+    <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Api.Tests/Sporeo.Fixtures.Api.Tests.csproj" />
     <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Application.Tests/Sporeo.Fixtures.Application.Tests.csproj" />
     <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Domain.Tests/Sporeo.Fixtures.Domain.Tests.csproj" />
     <Project Path="tests/Modules/Fixtures/Sporeo.Fixtures.Infrastructure.Integration.Tests/Sporeo.Fixtures.Infrastructure.Integration.Tests.csproj" />

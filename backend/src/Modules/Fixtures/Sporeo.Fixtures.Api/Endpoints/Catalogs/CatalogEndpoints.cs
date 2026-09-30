@@ -1,4 +1,4 @@
-﻿using Mapster;
+﻿using MapsterMapper;
 using MediatR;
 using Sporeo.BuildingBlocks.Application.Pagination;
 using Sporeo.Fixtures.Api.Extensions;
@@ -15,21 +15,26 @@ public sealed class CatalogEndpoints : IEndpoint
     {
         var group = app.MapGroup("api/v1/admin/catalogs")
             .WithTags("Catalogs");
+        // todo: RequireAuthorization() when authentication is wired up for admin routes.
 
-        group.MapGet("/", GetCatalogAsync)
+        group.MapGet("", GetCatalogAsync)
             .WithName("GetCatalog")
             .WithSummary("Gets a paged catalog of sports and leagues.")
             .WithDescription("Retrieves a cached, paginated list of sports and their associated leagues from the external provider." +
                 "Used by administrators to browse available competitions.")
             .Produces<PagedResponse<CatalogSportResponse>>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest)
-            // .ProducesProblem(StatusCodes.Status401Unauthorized) // Uncomment if authentication is required
-            .ProducesProblem(StatusCodes.Status500InternalServerError);
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status500InternalServerError)
+            .ProducesProblem(StatusCodes.Status502BadGateway)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 
     private static async Task<IResult> GetCatalogAsync(
         [AsParameters] GetCatalogRequest request,
         ISender sender,
+        IMapper mapper,
         CancellationToken cancellationToken)
     {
         var paginationParams = new PaginationParams(request.PageNumber, request.PageSize);
@@ -37,7 +42,12 @@ public sealed class CatalogEndpoints : IEndpoint
 
         var result = await sender.Send(query, cancellationToken);
 
-        var response = result.Adapt<PagedResponse<CatalogSportResponse>>();
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblemResult();
+        }
+
+        var response = mapper.Map<PagedResponse<CatalogSportResponse>>(result.Value);
 
         return Results.Ok(response);
     }
