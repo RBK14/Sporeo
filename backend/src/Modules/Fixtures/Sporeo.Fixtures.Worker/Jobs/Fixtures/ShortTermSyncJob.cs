@@ -4,6 +4,7 @@ using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 using Sporeo.Fixtures.Worker.Observability;
+using Errors = Sporeo.Fixtures.Application.Common.Errors;
 
 namespace Sporeo.Fixtures.Worker.Jobs.Fixtures;
 
@@ -130,5 +131,6 @@ internal sealed class ShortTermSyncJob(
     }
 
     private static bool IsRetriable(Error error) =>
-        error.Code is "ExternalFixtures.Transient" or "ExternalFixtures.RateLimited";
+        error.Code == Errors.ExternalFixtures.Transient.Code
+        || error.Code == Errors.ExternalFixtures.RateLimited.Code;
 }

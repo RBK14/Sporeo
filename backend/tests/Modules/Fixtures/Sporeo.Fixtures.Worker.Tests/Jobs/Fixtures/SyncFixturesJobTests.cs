@@ -8,6 +8,7 @@ using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Worker.Jobs.Fixtures;
 using MediatR;
+using Errors = Sporeo.Fixtures.Application.Common.Errors;
 
 namespace Sporeo.Fixtures.Worker.Tests.Jobs;
 
@@ -55,8 +56,7 @@ public sealed class SyncFixturesJobTests
         var client = Substitute.For<IExternalFixturesClient>();
         client.ProviderName.Returns("TheSportsDB");
         client.FetchShortTermFixturesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
-                new Error("ExternalFixtures.Unauthorized", "Denied")));
+            .Returns(Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Errors.ExternalFixtures.Unauthorized));
 
         var sender = Substitute.For<ISender>();
         var job = new ShortTermSyncJob([client], sender, NullLogger<ShortTermSyncJob>.Instance);
@@ -113,8 +113,7 @@ public sealed class SyncFixturesJobTests
         var client = Substitute.For<IExternalFixturesClient>();
         client.ProviderName.Returns("TheSportsDB");
         client.FetchShortTermFixturesAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
-                new Error("ExternalFixtures.InvalidPayload", "Provider returned an invalid payload.")));
+            .Returns(Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Errors.ExternalFixtures.InvalidPayload));
 
         var sender = Substitute.For<ISender>();
         var job = new ShortTermSyncJob([client], sender, NullLogger<ShortTermSyncJob>.Instance);

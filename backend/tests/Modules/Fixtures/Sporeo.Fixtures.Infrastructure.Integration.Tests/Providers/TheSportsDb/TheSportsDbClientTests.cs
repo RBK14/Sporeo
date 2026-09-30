@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
+using Errors = Sporeo.Fixtures.Application.Common.Errors;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Tests.Providers.TheSportsDb;
 
@@ -42,7 +43,7 @@ public sealed class TheSportsDbClientTests
         var result = await sut.FetchShortTermFixturesAsync("4328", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.Unauthorized");
+        result.Error.Should().Be(Errors.ExternalFixtures.Unauthorized);
     }
 
     [Fact]
@@ -54,7 +55,7 @@ public sealed class TheSportsDbClientTests
         var result = await sut.FetchShortTermFixturesAsync("4328", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.RateLimited");
+        result.Error.Should().Be(Errors.ExternalFixtures.RateLimited);
     }
 
     [Fact]
@@ -66,7 +67,7 @@ public sealed class TheSportsDbClientTests
         var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.InvalidPayload");
+        result.Error.Should().Be(Errors.ExternalFixtures.InvalidPayload);
     }
 
     [Fact]
@@ -81,7 +82,7 @@ public sealed class TheSportsDbClientTests
         var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.Transient");
+        result.Error.Should().Be(Errors.ExternalFixtures.Transient);
     }
 
     [Fact]
@@ -185,7 +186,7 @@ public sealed class TheSportsDbClientTests
         var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.InvalidPayload");
+        result.Error.Should().Be(Errors.ExternalFixtures.InvalidPayload);
     }
 
     [Fact]
@@ -201,7 +202,7 @@ public sealed class TheSportsDbClientTests
         var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.InvalidPayload");
+        result.Error.Should().Be(Errors.ExternalFixtures.InvalidPayload);
     }
 
     [Fact]

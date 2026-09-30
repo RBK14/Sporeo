@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Domain.Results;
+using Errors = Sporeo.Fixtures.Application.Common.Errors;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 
@@ -17,12 +18,6 @@ internal sealed class TheSportsDbApi(
         PropertyNameCaseInsensitive = true
     };
 
-    internal static readonly Error Unauthorized = new("ExternalFixtures.Unauthorized", "Provider rejected the API credentials.");
-    internal static readonly Error RateLimited = new("ExternalFixtures.RateLimited", "Provider rate limit was exceeded.");
-    internal static readonly Error Transient = new("ExternalFixtures.Transient", "Provider returned a transient failure.");
-    internal static readonly Error Permanent = new("ExternalFixtures.Permanent", "Provider returned a permanent failure.");
-    internal static readonly Error InvalidPayload = new("ExternalFixtures.InvalidPayload", "Provider returned an invalid payload.");
-
     public async Task<Result<T>> FetchAsync<T>(string requestUri, CancellationToken cancellationToken)
     {
         try
@@ -33,13 +28,13 @@ internal sealed class TheSportsDbApi(
                 cancellationToken);
 
             if (response.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
-                return Result.Failure<T>(Unauthorized);
+                return Result.Failure<T>(Errors.ExternalFixtures.Unauthorized);
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                return Result.Failure<T>(RateLimited);
+                return Result.Failure<T>(Errors.ExternalFixtures.RateLimited);
 
             if ((int)response.StatusCode >= 500)
-                return Result.Failure<T>(Transient);
+                return Result.Failure<T>(Errors.ExternalFixtures.Transient);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -47,14 +42,14 @@ internal sealed class TheSportsDbApi(
                     "TheSportsDb API error: {Path} returned status {StatusCode}",
                     requestUri,
                     (int)response.StatusCode);
-                return Result.Failure<T>(Permanent);
+                return Result.Failure<T>(Errors.ExternalFixtures.Permanent);
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var data = await JsonSerializer.DeserializeAsync<T>(stream, JsonOptions, cancellationToken);
 
             if (data is null)
-                return Result.Failure<T>(InvalidPayload);
+                return Result.Failure<T>(Errors.ExternalFixtures.InvalidPayload);
 
             return Result.Success(data);
         }
@@ -65,17 +60,17 @@ internal sealed class TheSportsDbApi(
         catch (HttpRequestException ex)
         {
             logger.LogError("Transient HTTP failure while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
-            return Result.Failure<T>(Transient);
+            return Result.Failure<T>(Errors.ExternalFixtures.Transient);
         }
         catch (JsonException ex)
         {
             logger.LogError("Invalid JSON payload while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
-            return Result.Failure<T>(InvalidPayload);
+            return Result.Failure<T>(Errors.ExternalFixtures.InvalidPayload);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError("Unexpected error while fetching {Path}: {ExceptionType}.", requestUri, ex.GetType().Name);
-            return Result.Failure<T>(Permanent);
+            return Result.Failure<T>(Errors.ExternalFixtures.Permanent);
         }
     }
 }

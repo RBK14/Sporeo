@@ -3,6 +3,7 @@ using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Catalogs.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Infrastructure.Integration.Observability;
+using Errors = Sporeo.Fixtures.Application.Common.Errors;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 
@@ -55,8 +56,7 @@ internal sealed class TheSportsDbClient(
     {
         if (string.IsNullOrWhiteSpace(seasonName))
         {
-            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(
-                new Error("ExternalFixtures.MissingSeasonId", "Long term sync requires ExternalSeasonId."));
+            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Errors.ExternalFixtures.MissingSeasonId);
         }
 
         logger.LogInformation("Running long term sync (season {SeasonId}) for league {LeagueId}.", seasonName, externalLeagueId);
@@ -171,7 +171,7 @@ internal sealed class TheSportsDbClient(
         }
 
         if (mapped.Count == 0)
-            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(TheSportsDbApi.InvalidPayload);
+            return Result.Failure<IReadOnlyList<ExternalFixtureDto>>(Errors.ExternalFixtures.InvalidPayload);
 
         return Result.Success<IReadOnlyList<ExternalFixtureDto>>(mapped);
     }

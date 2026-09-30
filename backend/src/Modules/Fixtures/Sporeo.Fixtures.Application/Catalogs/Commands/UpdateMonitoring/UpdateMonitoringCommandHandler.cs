@@ -7,6 +7,7 @@ using Sporeo.Fixtures.Application.Leagues.Data;
 using Sporeo.Fixtures.Application.Sports.Data;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Sports;
+using Errors = Sporeo.Fixtures.Application.Common.Errors;
 
 namespace Sporeo.Fixtures.Application.Catalogs.Commands.UpdateMonitoring;
 
@@ -27,7 +28,7 @@ internal sealed class UpdateMonitoringCommandHandler(
         var cachedLeagues = await cacheService.GetAsync<List<ExternalLeagueDto>>(CatalogCacheKeys.LeaguesCacheKey, cancellationToken) ?? [];
 
         if (cachedSports.Count == 0 || cachedLeagues.Count == 0)
-            return Result.Failure(new Error("Catalog.CacheExpired", "Catalog data expired. Please refresh the page."));
+            return Result.Failure(Errors.Catalog.CacheExpired);
 
         var cachedSportsDict = cachedSports
             .DistinctBy(s => s.ProviderId)
@@ -44,7 +45,7 @@ internal sealed class UpdateMonitoringCommandHandler(
         var providerName = request.Sports.FirstOrDefault()?.ProviderName;
 
         if (string.IsNullOrEmpty(providerName))
-            return Result.Failure(new Error("Catalog.InvalidRequest", "Provider name is missing in the request."));
+            return Result.Failure(Errors.Catalog.InvalidRequest);
 
         var existingSportsList = await sportRepository.GetByExternalProviderIdsAsync(providerName, incomingSportIds, cancellationToken);
         var existingSports = existingSportsList.ToDictionary(s => s.ExternalProviderId!);
