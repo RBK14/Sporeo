@@ -1,5 +1,7 @@
 ﻿using Mapster;
+using Sporeo.Fixtures.Application.Catalogs.Commands.UpdateMonitoring;
 using Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
+using Sporeo.Fixtures.Contracts.Catalogs.Requests;
 using Sporeo.Fixtures.Contracts.Catalogs.Responses;
 
 namespace Sporeo.Fixtures.Api.Mappings;
@@ -18,6 +20,17 @@ internal sealed class CatalogMappingConfig : IRegister
 
         config.NewConfig<CatalogSportReadModel, CatalogSportResponse>()
             .Map(dest => dest.Leagues, src => src.Leagues)
+            .MapToConstructor(true);
+
+        config.NewConfig<UpdateMonitoringLeagueRequest, UpdateMonitoringLeagueDto>()
+            .MapToConstructor(true);
+
+        config.NewConfig<UpdateMonitoringSportRequest, UpdateMonitoringSportDto>()
+            .Map(dest => dest.Leagues, src => src.Leagues)
+            .MapToConstructor(true);
+
+        config.NewConfig<UpdateMonitoringRequest, UpdateMonitoringCommand>()
+            .Map(dest => dest.Sports, src => src.Sports)
             .MapToConstructor(true);
     }
 }

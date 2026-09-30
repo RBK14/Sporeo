@@ -29,6 +29,9 @@ internal static class ResultExtensions
                 DomainErrors.Season.NotFoundCode
                 => StatusCodes.Status404NotFound,
 
+            var code when code == AppErrors.Catalog.InvalidRequest.Code
+                => StatusCodes.Status400BadRequest,
+
             var code when code == AppErrors.Catalog.CacheExpired.Code
                 => StatusCodes.Status409Conflict,
 

@@ -1,7 +1,9 @@
 ﻿using MapsterMapper;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Sporeo.BuildingBlocks.Application.Pagination;
 using Sporeo.Fixtures.Api.Extensions;
+using Sporeo.Fixtures.Application.Catalogs.Commands.UpdateMonitoring;
 using Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 using Sporeo.Fixtures.Contracts.Catalogs.Requests;
 using Sporeo.Fixtures.Contracts.Catalogs.Responses;
@@ -20,7 +22,7 @@ public sealed class CatalogEndpoints : IEndpoint
         group.MapGet("", GetCatalogAsync)
             .WithName("GetCatalog")
             .WithSummary("Gets a paged catalog of sports and leagues.")
-            .WithDescription("Retrieves a cached, paginated list of sports and their associated leagues from the external provider." +
+            .WithDescription("Retrieves a cached, paginated list of sports and their associated leagues from the external provider. " +
                 "Used by administrators to browse available competitions.")
             .Produces<PagedResponse<CatalogSportResponse>>(StatusCodes.Status200OK)
             .ProducesValidationProblem()
@@ -29,6 +31,17 @@ public sealed class CatalogEndpoints : IEndpoint
             .ProducesProblem(StatusCodes.Status500InternalServerError)
             .ProducesProblem(StatusCodes.Status502BadGateway)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
+        group.MapPut("monitoring", UpdateMonitoringAsync)
+            .WithName("UpdateMonitoring")
+            .WithSummary("Updates monitoring status for sports and leagues.")
+            .WithDescription("Creates or updates sports and leagues from the external provider catalog, applying the specified monitoring status. " +
+                "Triggers outbox domain events for newly enabled leagues.")
+            .Produces(StatusCodes.Status204NoContent)
+            .ProducesValidationProblem()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 
     private static async Task<IResult> GetCatalogAsync(
@@ -50,5 +63,23 @@ public sealed class CatalogEndpoints : IEndpoint
         var response = mapper.Map<PagedResponse<CatalogSportResponse>>(result.Value);
 
         return Results.Ok(response);
+    }
+
+    private static async Task<IResult> UpdateMonitoringAsync(
+        [FromBody] UpdateMonitoringRequest request,
+        ISender sender,
+        IMapper mapper,
+        CancellationToken cancellationToken)
+    {
+        var command = mapper.Map<UpdateMonitoringCommand>(request);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return result.Error.ToProblemResult();
+        }
+
+        return Results.NoContent();
     }
 }
