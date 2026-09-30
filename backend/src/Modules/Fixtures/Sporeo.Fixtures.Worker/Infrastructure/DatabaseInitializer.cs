@@ -39,8 +39,11 @@ public static partial class DatabaseInitializer
     private static async Task InitializeQuartzDatabaseAsync(IServiceProvider services, ILogger logger)
     {
         var configuration = services.GetRequiredService<IConfiguration>();
-        var connectionString = configuration.GetConnectionString("quartz-db")
-            ?? throw new InvalidOperationException("Connection string 'quartz-db' was not found.");
+        var connectionString = configuration.GetConnectionString("quartz-db");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'quartz-db' was not found.");
+        }
 
         await using var connection = new SqlConnection(connectionString);
         await connection.OpenAsync();

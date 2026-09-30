@@ -41,8 +41,11 @@ public static class DependencyInjection
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
     public static IServiceCollection AddWorkerServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var quartzConnectionString = configuration.GetConnectionString("quartz-db")
-            ?? throw new InvalidOperationException("Connection string 'quartz-db' was not found.");
+        var quartzConnectionString = configuration.GetConnectionString("quartz-db");
+        if (string.IsNullOrWhiteSpace(quartzConnectionString))
+        {
+            throw new InvalidOperationException("Connection string 'quartz-db' was not found.");
+        }
 
         var workerOptions = configuration.GetSection(WorkerOptions.SectionName).Get<WorkerOptions>()
                             ?? new WorkerOptions();

@@ -26,7 +26,6 @@ using Sporeo.Fixtures.Infrastructure.Persistence.Reading;
 using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
 using Sporeo.Fixtures.Infrastructure.Persistence.Writing.Exceptions;
 using Sporeo.Fixtures.Infrastructure.Persistence.Writing.Interceptors;
-using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
 using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
 using Sporeo.Fixtures.Infrastructure.Persistence.Reading.ReadStores;
 using Sporeo.Fixtures.Infrastructure.Persistence.Writing.Repositories;
@@ -96,11 +95,14 @@ public static class DependencyInjection
     /// <param name="services">The service collection to configure.</param>
     /// <param name="configuration">The application configuration containing the <c>redis</c> connection string.</param>
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the <c>redis</c> connection string is missing.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the <c>redis</c> connection string is missing or blank.</exception>
     public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("redis")
-            ?? throw new InvalidOperationException("Connection string 'redis' was not found.");
+        var connectionString = configuration.GetConnectionString("redis");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'redis' was not found.");
+        }
 
         services.AddStackExchangeRedisCache(options =>
         {
@@ -115,8 +117,11 @@ public static class DependencyInjection
 
     private static IServiceCollection AddSqlServer(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("fixtures-db")
-            ?? throw new InvalidOperationException("Connection string 'fixtures-db' was not found.");
+        var connectionString = configuration.GetConnectionString("fixtures-db");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'fixtures-db' was not found.");
+        }
 
         services.AddSingleton<ISqlConnectionFactory>(_ => new SqlConnectionFactory(connectionString));
 
@@ -126,16 +131,7 @@ public static class DependencyInjection
                 sp.GetRequiredService<AuditableEntityInterceptor>(),
                 sp.GetRequiredService<VenueLocationInterceptor>());
 
-            options.UseSqlServer(connectionString, sqlOptions =>
-            {
-                sqlOptions.UseNetTopologySuite();
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
-
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorNumbersToAdd: null);
-            });
+            options.ConfigureFixturesSqlServer(connectionString);
         });
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<FixturesDbContext>());
