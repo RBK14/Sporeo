@@ -24,7 +24,10 @@ internal sealed class GetNearbyFixturesQueryValidator : AbstractValidator<GetNea
         RuleFor(query => query.RadiusInMeters)
             .GreaterThan(0)
             .WithErrorCode("NearbyFixtures.InvalidRadius")
-            .WithMessage("Radius must be greater than zero.");
+            .WithMessage("Radius must be greater than zero.")
+            .LessThanOrEqualTo(100_000)
+            .WithErrorCode("NearbyFixtures.RadiusTooLarge")
+            .WithMessage("Radius must not exceed 100000 meters.");
 
         RuleFor(query => query.Pagination)
             .NotNull()
