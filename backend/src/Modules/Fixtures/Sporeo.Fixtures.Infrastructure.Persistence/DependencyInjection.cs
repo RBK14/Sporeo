@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Configuration;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence.Dapper;
@@ -83,6 +84,10 @@ public static class DependencyInjection
     {
         services.AddFixturesDatabase(configuration);
         services.AddSingleton<IDatabaseExceptionClassifier, SqlServerDatabaseExceptionClassifier>();
+        services.AddOptions<OutboxOptions>()
+            .Bind(configuration.GetSection(OutboxOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
         services.AddRepositories();
 

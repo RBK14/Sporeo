@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Sporeo.BuildingBlocks.Domain.Time;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Configuration;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models;
 
 namespace Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
@@ -9,18 +11,19 @@ namespace Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
 /// Generic EF Core outbox store backed by a module-specific database context.
 /// </summary>
 /// <typeparam name="TDbContext">The database context containing the outbox set.</typeparam>
-public sealed class EfOutboxStore<TDbContext>(TDbContext dbContext) : IOutboxStore
+public sealed class EfOutboxStore<TDbContext>(
+    TDbContext dbContext,
+    IOptions<OutboxOptions> options) : IOutboxStore
     where TDbContext : DbContext
 {
-    private static readonly TimeSpan ClaimLease = TimeSpan.FromMinutes(5);
-
     /// <inheritdoc />
     public async Task<IReadOnlyList<OutboxMessage>> GetUnprocessedMessagesAsync(
         int batchSize,
         CancellationToken cancellationToken = default)
     {
         var now = SystemTimeProvider.Now;
-        var leaseExpiresOn = now.Add(ClaimLease);
+        var leaseExpiresOn = now.Add(options.Value.ClaimLease);
+        var maxRetries = options.Value.MaxRetries;
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -39,15 +42,34 @@ public sealed class EfOutboxStore<TDbContext>(TDbContext dbContext) : IOutboxSto
             .AsTracking()
             .ToListAsync(cancellationToken);
 
+        var claimed = new List<OutboxMessage>(messages.Count);
+
         foreach (var message in messages)
-            message.MarkAsProcessing(leaseExpiresOn);
+        {
+            if (message.Status == OutboxMessageStatus.Processing)
+            {
+                if (message.RetryCount + 1 >= maxRetries)
+                {
+                    message.MarkAsDeadLetter("Processing lease expired; retry budget exhausted.");
+                    continue;
+                }
+
+                message.MarkAsReclaimed(leaseExpiresOn);
+            }
+            else
+            {
+                message.MarkAsProcessing(leaseExpiresOn);
+            }
+
+            claimed.Add(message);
+        }
 
         if (messages.Count > 0)
             await dbContext.SaveChangesAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
 
-        return messages;
+        return claimed;
     }
 
     /// <inheritdoc />

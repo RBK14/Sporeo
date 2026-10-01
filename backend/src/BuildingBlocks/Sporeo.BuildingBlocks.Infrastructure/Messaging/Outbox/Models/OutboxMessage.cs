@@ -73,6 +73,17 @@ public sealed class OutboxMessage
     }
 
     /// <summary>
+    /// Reclaims a message whose processing lease expired and increments the retry counter.
+    /// </summary>
+    public void MarkAsReclaimed(DateTimeOffset leaseExpiresOn)
+    {
+        Status = OutboxMessageStatus.Processing;
+        NextAttempt = leaseExpiresOn;
+        RetryCount++;
+        Error = "Processing lease expired; message reclaimed.";
+    }
+
+    /// <summary>
     /// Marks the message as successfully processed.
     /// </summary>
     public void MarkAsProcessed(DateTimeOffset processedOn)

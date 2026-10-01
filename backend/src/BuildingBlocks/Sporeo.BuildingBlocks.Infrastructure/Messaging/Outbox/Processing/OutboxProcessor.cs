@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Sporeo.BuildingBlocks.Domain.Events;
 using Sporeo.BuildingBlocks.Domain.Time;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Configuration;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Models;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
 
@@ -15,11 +17,9 @@ public sealed class OutboxProcessor(
     IOutboxStore outboxStore,
     IDomainEventTypeRegistry eventTypeRegistry,
     IOutboxMessageDispatcher dispatcher,
+    IOptions<OutboxOptions> options,
     ILogger<OutboxProcessor> logger) : IOutboxProcessor
 {
-    private const int DefaultBatchSize = 20;
-    private const int MaxRetries = 3;
-
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -30,7 +30,9 @@ public sealed class OutboxProcessor(
     public async Task<OutboxProcessingResult> ProcessOutboxMessagesAsync(CancellationToken cancellationToken = default)
     {
         var now = SystemTimeProvider.Now;
-        var messages = await outboxStore.GetUnprocessedMessagesAsync(DefaultBatchSize, cancellationToken);
+        var batchSize = options.Value.BatchSize;
+        var maxRetries = options.Value.MaxRetries;
+        var messages = await outboxStore.GetUnprocessedMessagesAsync(batchSize, cancellationToken);
 
         if (messages.Count == 0)
             return new OutboxProcessingResult(0, 0, 0);
@@ -63,7 +65,7 @@ public sealed class OutboxProcessor(
             {
                 logger.LogError(ex, "An error occurred while processing outbox event {EventId}.", message.Id);
 
-                if (message.RetryCount + 1 >= MaxRetries)
+                if (message.RetryCount + 1 >= maxRetries)
                 {
                     logger.LogCritical("Outbox event {EventId} moved to dead-letter.", message.Id);
                     message.MarkAsDeadLetter(ex.Message);
