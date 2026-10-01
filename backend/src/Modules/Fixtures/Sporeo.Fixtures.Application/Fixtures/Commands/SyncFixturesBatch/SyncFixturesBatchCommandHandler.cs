@@ -3,8 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Abstractions;
-using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatchChunk;
 using Sporeo.Fixtures.Application.Leagues.Data;
 using Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 using Sporeo.Fixtures.Domain.Common;
@@ -18,8 +16,8 @@ namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 /// </summary>
 internal sealed class SyncFixturesBatchCommandHandler(
     ILeagueRepository leagueRepository,
+    SyncChunkIsolationExecutor chunkExecutor,
     IServiceScopeFactory scopeFactory,
-    IDatabaseExceptionClassifier exceptionClassifier,
     ILogger<SyncFixturesBatchCommandHandler> logger)
     : ICommandHandler<SyncFixturesBatchCommand, SyncBatchResultDto>
 {
@@ -46,27 +44,45 @@ internal sealed class SyncFixturesBatchCommandHandler(
             .Where(f => f.StartDate >= DateTimeOffset.UtcNow)
             .MinBy(f => f.StartDate);
 
-        var seasonMap = await EnsureSeasonsAsync(
+        var seasonMapResult = await EnsureSeasonsAsync(
             league.Id,
             incomingSeasonNames,
             firstUpcomingFixture?.StartDate,
             firstUpcomingFixture?.SeasonName,
             cancellationToken);
 
-        var executor = new SyncChunkIsolationExecutor(scopeFactory, exceptionClassifier, logger);
+        if (seasonMapResult.IsFailure)
+            return Result.Failure<SyncBatchResultDto>(seasonMapResult.Error);
+
+        var seasonMap = seasonMapResult.Value;
         var aggregate = SyncBatchResultDto.Empty;
 
         foreach (var chunk in request.Fixtures.Chunk(SyncFixturesBatchCommand.ChunkSize))
         {
-            var chunkReport = await executor.ProcessChunkWithIsolationAsync(
-                league.SportId,
-                league.Id,
-                seasonMap,
-                request,
-                chunk.ToList(),
-                cancellationToken);
+            try
+            {
+                var chunkReport = await chunkExecutor.ProcessChunkWithIsolationAsync(
+                    league.SportId,
+                    league.Id,
+                    seasonMap,
+                    request,
+                    chunk.ToList(),
+                    cancellationToken);
 
-            aggregate = aggregate.Add(chunkReport);
+                aggregate = aggregate.Add(chunkReport);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(
+                    ex,
+                    "Unhandled failure while syncing a chunk of {Count} fixtures for league {ProviderName}/{ExternalLeagueId}.",
+                    chunk.Length,
+                    request.ProviderName,
+                    request.ExternalLeagueId);
+
+                aggregate = aggregate.Add(
+                    SyncBatchResultDto.Create(0, 0, skipped: 0, failed: chunk.Length));
+            }
         }
 
         if (aggregate.HasWarnings)
@@ -90,7 +106,7 @@ internal sealed class SyncFixturesBatchCommandHandler(
         return Result.Success(aggregate);
     }
 
-    private async Task<IReadOnlyDictionary<string, SeasonId>> EnsureSeasonsAsync(
+    private async Task<Result<IReadOnlyDictionary<string, SeasonId>>> EnsureSeasonsAsync(
         LeagueId leagueId,
         IReadOnlyList<string> seasonNames,
         DateTimeOffset? nextFixtureDate,
@@ -100,20 +116,12 @@ internal sealed class SyncFixturesBatchCommandHandler(
         using var scope = scopeFactory.CreateScope();
         var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
-        var result = await sender.Send(
+        return await sender.Send(
             new EnsureSeasonsForSyncCommand(
                 leagueId,
                 seasonNames,
                 nextFixtureDate,
                 nextFixtureSeasonName),
             cancellationToken);
-
-        if (result.IsFailure)
-        {
-            throw new InvalidOperationException(
-                $"Season ensure failed: {result.Error.Code} {result.Error.Message}");
-        }
-
-        return result.Value;
     }
 }

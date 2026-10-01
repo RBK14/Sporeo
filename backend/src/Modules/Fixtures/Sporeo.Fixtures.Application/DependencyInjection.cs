@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Sporeo.BuildingBlocks.Application.Behaviors;
+using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 
 namespace Sporeo.Fixtures.Application;
 
@@ -30,6 +31,8 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(
             typeof(DependencyInjection).Assembly,
             includeInternalTypes: true);
+
+        services.AddTransient<SyncChunkIsolationExecutor>();
 
         return services;
     }

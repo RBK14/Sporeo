@@ -16,7 +16,7 @@ namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 internal sealed class SyncChunkIsolationExecutor(
     IServiceScopeFactory scopeFactory,
     IDatabaseExceptionClassifier exceptionClassifier,
-    ILogger logger)
+    ILogger<SyncChunkIsolationExecutor> logger)
 {
     private const int MaxUniqueViolationRetries = 3;
 
@@ -114,6 +114,16 @@ internal sealed class SyncChunkIsolationExecutor(
 
                 aggregate = aggregate.Add(SyncBatchResultDto.Create(0, 0, skipped: 1, failed: 0));
             }
+            catch (Exception ex)
+            {
+                logger.LogError(
+                    ex,
+                    "Failed to sync fixture {ProviderName}/{ExternalId} during per-item fallback.",
+                    request.ProviderName,
+                    fixture.ExternalId);
+
+                aggregate = aggregate.Add(SyncBatchResultDto.Create(0, 0, skipped: 0, failed: 1));
+            }
         }
 
         return aggregate;
@@ -140,8 +150,13 @@ internal sealed class SyncChunkIsolationExecutor(
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
         {
-            throw new InvalidOperationException(
-                $"Chunk sync failed: {result.Error.Code} {result.Error.Message}");
+            logger.LogError(
+                "Chunk sync returned a domain failure for {Count} fixtures: {ErrorCode} {ErrorMessage}",
+                chunk.Count,
+                result.Error.Code,
+                result.Error.Message);
+
+            return SyncBatchResultDto.Create(0, 0, skipped: 0, failed: chunk.Count);
         }
 
         return result.Value;
