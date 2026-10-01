@@ -44,15 +44,19 @@ internal sealed class FixturesDatabaseSeeder(FixturesDbContext dbContext)
                     l.ExternalProviderId == providerId,
                     cancellationToken);
 
+            var shouldMonitor = providerId is not ("4329" or "4330");
+
             if (league is null)
             {
-                league = League.CreateFromProvider(soccer.Id, name, null, providerName, providerId).Value;
+                league = League.CreateFromProvider(
+                    soccer.Id,
+                    name,
+                    null,
+                    providerName,
+                    providerId,
+                    isMonitored: shouldMonitor).Value;
                 dbContext.Leagues.Add(league);
             }
-
-            // Change the monitoring status for specific leagues based on their provider ID
-            if (providerId == "4329" || providerId == "4330")
-                league.ChangeMonitoringStatus(false);
 
             var hasCurrentSeason = await dbContext.Seasons
                 .AnyAsync(s => s.LeagueId == league.Id && s.IsCurrent, cancellationToken);
