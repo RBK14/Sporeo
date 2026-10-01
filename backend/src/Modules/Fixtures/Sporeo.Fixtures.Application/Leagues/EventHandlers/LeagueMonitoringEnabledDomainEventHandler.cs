@@ -58,5 +58,18 @@ internal sealed class LeagueMonitoringEnabledDomainEventHandler(
 
             throw new InvalidOperationException($"Initial batch sync failed: {batchResult.Error.Code}");
         }
+
+        if (batchResult.Value.HasWarnings)
+        {
+            logger.LogWarning(
+                "Initial sync batch for league {LeagueId} completed with partial success. Status={Status}, Failed={Failed}, Skipped={Skipped}",
+                leagueData.ExternalProviderId,
+                batchResult.Value.Status,
+                batchResult.Value.Failed,
+                batchResult.Value.Skipped);
+
+            throw new InvalidOperationException(
+                $"Initial batch sync completed with warnings: Failed={batchResult.Value.Failed}, Skipped={batchResult.Value.Skipped}");
+        }
     }
 }

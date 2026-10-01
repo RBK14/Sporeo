@@ -63,6 +63,16 @@ public sealed class OutboxMessage
     }
 
     /// <summary>
+    /// Marks the message as claimed for processing and sets a lease expiry on <see cref="NextAttempt"/>.
+    /// </summary>
+    public void MarkAsProcessing(DateTimeOffset leaseExpiresOn)
+    {
+        Status = OutboxMessageStatus.Processing;
+        NextAttempt = leaseExpiresOn;
+        Error = null;
+    }
+
+    /// <summary>
     /// Marks the message as successfully processed.
     /// </summary>
     public void MarkAsProcessed(DateTimeOffset processedOn)

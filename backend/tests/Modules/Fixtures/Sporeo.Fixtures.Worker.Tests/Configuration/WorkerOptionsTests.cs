@@ -21,8 +21,7 @@ public sealed class WorkerOptionsTests
         var options = new WorkerOptions
         {
             DispatcherCron = " ",
-            LongTermSyncCron = "0 0 3 * * ?",
-            SeasonsSyncCron = "0 0 2 ? * MON"
+            LongTermSyncCron = "0 0 3 * * ?"
         };
 
         var result = _validator.Validate(null, options);
@@ -37,8 +36,7 @@ public sealed class WorkerOptionsTests
         var options = new WorkerOptions
         {
             DispatcherCron = "0 30 * * * ?",
-            LongTermSyncCron = "not-a-cron",
-            SeasonsSyncCron = "0 0 2 ? * MON"
+            LongTermSyncCron = "not-a-cron"
         };
 
         var result = _validator.Validate(null, options);
@@ -47,27 +45,10 @@ public sealed class WorkerOptionsTests
         result.Failures.Should().Contain(failure => failure.Contains(nameof(WorkerOptions.LongTermSyncCron)));
     }
 
-    [Fact]
-    public void Validate_WithInvalidSeasonsSyncCron_ShouldFail()
-    {
-        var options = new WorkerOptions
-        {
-            DispatcherCron = "0 30 * * * ?",
-            LongTermSyncCron = "0 0 3 * * ?",
-            SeasonsSyncCron = "0 0 2"
-        };
-
-        var result = _validator.Validate(null, options);
-
-        result.Failed.Should().BeTrue();
-        result.Failures.Should().Contain(failure => failure.Contains(nameof(WorkerOptions.SeasonsSyncCron)));
-    }
-
     private static WorkerOptions CreateValidOptions() =>
         new()
         {
             DispatcherCron = "0 30 * * * ?",
-            LongTermSyncCron = "0 0 3 * * ?",
-            SeasonsSyncCron = "0 0 2 ? * MON"
+            LongTermSyncCron = "0 0 3 * * ?"
         };
 }

@@ -60,7 +60,6 @@ public sealed class WorkerDependencyInjectionTests
             ["ConnectionStrings:redis"] = "localhost:6379",
             ["Worker:DispatcherCron"] = "0 30 * * * ?",
             ["Worker:LongTermSyncCron"] = "0 0 3 * * ?",
-            ["Worker:SeasonsSyncCron"] = "0 0 2 ? * MON",
             ["ExternalProviders:TheSportsDb:BaseUrl"] = "https://www.thesportsdb.com/api/v1/json",
             ["ExternalProviders:TheSportsDb:ApiKey"] = "test-api-key",
             ["ExternalProviders:Nominatim:BaseUrl"] = "https://nominatim.openstreetmap.org",

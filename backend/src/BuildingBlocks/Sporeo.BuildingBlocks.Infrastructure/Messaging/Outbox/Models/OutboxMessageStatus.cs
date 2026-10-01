@@ -11,12 +11,17 @@ public enum OutboxMessageStatus
     Pending = 0,
 
     /// <summary>
+    /// Message was claimed by a worker and is currently being processed.
+    /// </summary>
+    Processing = 1,
+
+    /// <summary>
     /// Message was processed successfully.
     /// </summary>
-    Processed = 1,
+    Processed = 2,
 
     /// <summary>
     /// Message exceeded the retry budget and requires manual replay.
     /// </summary>
-    DeadLetter = 2
+    DeadLetter = 3
 }

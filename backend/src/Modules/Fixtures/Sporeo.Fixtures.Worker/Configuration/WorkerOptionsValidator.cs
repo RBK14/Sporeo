@@ -11,7 +11,6 @@ internal sealed class WorkerOptionsValidator : IValidateOptions<WorkerOptions>
 
         ValidateCron(options.DispatcherCron, nameof(options.DispatcherCron), failures);
         ValidateCron(options.LongTermSyncCron, nameof(options.LongTermSyncCron), failures);
-        ValidateCron(options.SeasonsSyncCron, nameof(options.SeasonsSyncCron), failures);
 
         return failures.Count > 0
             ? ValidateOptionsResult.Fail(failures)
