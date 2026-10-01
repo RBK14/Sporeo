@@ -30,9 +30,27 @@ internal static class ResultExtensions
                 => StatusCodes.Status404NotFound,
 
             var code when code == AppErrors.Catalog.InvalidRequest.Code
+                || code == DomainErrors.Sport.EmptyName.Code
+                || code == DomainErrors.League.EmptyName.Code
+                || code == DomainErrors.Season.EmptyName.Code
+                || code == DomainErrors.Venue.EmptyName.Code
+                || code == DomainErrors.Fixture.EmptyName.Code
+                || code == DomainErrors.League.InconsistentHierarchy.Code
+                || code == DomainErrors.Season.InconsistentHierarchy.Code
                 => StatusCodes.Status400BadRequest,
 
             var code when code == AppErrors.Catalog.CacheExpired.Code
+                || code == DomainErrors.Fixture.Deleted.Code
+                || code == DomainErrors.Venue.Deleted.Code
+                || code == DomainErrors.Sport.Deleted.Code
+                || code == DomainErrors.League.Deleted.Code
+                || code == DomainErrors.Season.Deleted.Code
+                || code == DomainErrors.Fixture.LockedForSync.Code
+                || code == DomainErrors.Venue.LockedForSync.Code
+                || code == DomainErrors.League.LockedForSync.Code
+                || code == DomainErrors.Season.LockedForSync.Code
+                || code == DomainErrors.Fixture.Finished.Code
+                || code == DomainErrors.Fixture.InvalidStatusTransition.Code
                 => StatusCodes.Status409Conflict,
 
             var code when code == AppErrors.ExternalFixtures.Transient.Code
