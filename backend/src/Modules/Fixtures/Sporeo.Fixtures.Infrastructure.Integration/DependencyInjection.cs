@@ -6,6 +6,7 @@ using Polly.Timeout;
 using Sporeo.Fixtures.Application.Venues.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
+using Sporeo.Fixtures.Infrastructure.Integration.Health;
 using Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
 using System.Net;
 using System.Net.Http.Headers;
@@ -39,6 +40,29 @@ public static class DependencyInjection
     {
         services.AddExternalFixtures(configuration);
         services.AddGeocoding(configuration);
+        services.AddExternalProviderHealthChecks();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers readiness health checks for upstream TheSportsDB and Nominatim endpoints.
+    /// </summary>
+    public static IServiceCollection AddExternalProviderHealthChecks(this IServiceCollection services)
+    {
+        services.AddHttpClient(TheSportsDbHealthCheck.HttpClientName, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+
+        services.AddHttpClient(NominatimHealthCheck.HttpClientName, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+
+        services.AddHealthChecks()
+            .AddCheck<TheSportsDbHealthCheck>("thesportsdb", tags: ["ready"])
+            .AddCheck<NominatimHealthCheck>("nominatim", tags: ["ready"]);
 
         return services;
     }

@@ -38,5 +38,11 @@ public interface ILeagueReadStore
     /// <returns>A list of leagues with current seasons.</returns>
     Task<IReadOnlyList<LeagueWithCurrentSeasonReadModel>> GetMonitoredLeaguesWithCurrentSeasonAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets external provider identity for a league.
+    /// </summary>
+    /// <param name="leagueId">The local league identifier.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>Provider identity when found; otherwise <see langword="null"/>.</returns>
     Task<LeagueExternalProviderDataReadModel?> GetLeagueExternalProviderDataAsync(LeagueId leagueId, CancellationToken cancellationToken = default);
 }

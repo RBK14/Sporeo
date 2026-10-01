@@ -1,0 +1,38 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore Sporeo.slnx
+
+      - name: Build
+        run: dotnet build Sporeo.slnx -c Release --no-restore
+
+      - name: Test
+        run: >
+          dotnet test Sporeo.slnx -c Release --no-build --nologo
+          --filter "FullyQualifiedName!~Infrastructure.Persistence.Tests"
