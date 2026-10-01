@@ -53,10 +53,27 @@ public sealed class GeocodingRateLimiterTests
         secondAcquire.IsCompleted.Should().BeFalse();
 
         await firstLease.DisposeAsync();
+
+        // Gate released, but the min-interval delay still applies. Advance may race with
+        // timer registration on FakeTimeProvider, so pump until the waiter completes.
         secondAcquire.IsCompleted.Should().BeFalse();
 
-        timeProvider.Advance(TimeSpan.FromSeconds(1));
-        await using var secondLease = await secondAcquire.WaitAsync(TimeSpan.FromSeconds(1));
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        while (!secondAcquire.IsCompleted)
+        {
+            timeProvider.Advance(TimeSpan.FromSeconds(1));
+            try
+            {
+                await Task.Delay(10, timeout.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                throw new TimeoutException(
+                    "Second AcquireAsync did not complete after disposing the first lease and advancing fake time.");
+            }
+        }
+
+        await using var secondLease = await secondAcquire;
         secondAcquire.IsCompletedSuccessfully.Should().BeTrue();
     }
 }

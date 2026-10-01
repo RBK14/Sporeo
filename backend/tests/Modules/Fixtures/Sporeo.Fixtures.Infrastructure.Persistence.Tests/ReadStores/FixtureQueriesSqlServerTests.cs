@@ -208,7 +208,7 @@ public sealed class FixtureQueriesSqlServerTests
         var wider = await sender.Send(new GetNearbyFixturesQuery(
             Latitude: 52.2297,
             Longitude: 21.0122,
-            RadiusInMeters: 500_000,
+            RadiusInMeters: 50_000,
             Pagination: new PaginationParams(1, 10),
             Filters: new FixtureFilters()));
 
@@ -227,7 +227,7 @@ public sealed class FixtureQueriesSqlServerTests
         var basketballOnly = await sender.Send(new GetNearbyFixturesQuery(
             Latitude: 52.2297,
             Longitude: 21.0122,
-            RadiusInMeters: 500_000,
+            RadiusInMeters: 50_000,
             Pagination: new PaginationParams(1, 10),
             Filters: new FixtureFilters(SportId: seed.SportBasketball.Id)));
 
@@ -259,10 +259,12 @@ public sealed class FixtureQueriesSqlServerTests
                 "National Stadium",
                 Address.Create("ul. Pilsudskiego 1", "Warsaw", "Poland").Value,
                 Coordinates.Create(52.2297, 21.0122).Value).Value;
+            // ~40 km south of Warsaw — outside the 1 km probe, inside the 50 km probe
+            // (and under the GetNearbyFixtures 100 km radius validation cap).
             var venueKrakow = Venue.CreateManually(
                 "Tauron Arena",
                 Address.Create("ul. Reymonta 1", "Krakow", "Poland").Value,
-                Coordinates.Create(50.0647, 19.9450).Value).Value;
+                Coordinates.Create(51.8700, 21.0122).Value).Value;
             var venueWithoutCoordinates = Venue.CreateManually("Hall Without Location").Value;
             var venueDeleted = Venue.CreateManually(
                 "Deleted Venue",

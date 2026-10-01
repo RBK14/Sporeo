@@ -33,7 +33,7 @@ public sealed class TheSportsDbHealthCheck(
         }
         catch (Exception ex)
         {
-            return HealthCheckResult.Unhealthy("TheSportsDB is unreachable.", ex);
+            return HealthCheckResult.Degraded("TheSportsDB is unreachable.", ex);
         }
     }
 }
@@ -67,7 +67,7 @@ public sealed class NominatimHealthCheck(
         }
         catch (Exception ex)
         {
-            return HealthCheckResult.Unhealthy("Nominatim is unreachable.", ex);
+            return HealthCheckResult.Degraded("Nominatim is unreachable.", ex);
         }
     }
 }

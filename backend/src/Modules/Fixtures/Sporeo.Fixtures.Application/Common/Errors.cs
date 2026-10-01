@@ -8,6 +8,32 @@ namespace Sporeo.Fixtures.Application.Common;
 public static class Errors
 {
     /// <summary>
+    /// Errors related to league create/update command validation and application failures.
+    /// </summary>
+    public static class League
+    {
+        /// <summary>
+        /// Returned when a create-league request omits the required sport identifier.
+        /// </summary>
+        public static readonly Error SportIdRequired = new(
+            "League.SportIdRequired",
+            "Sport id is required.");
+    }
+
+    /// <summary>
+    /// Errors related to season create/update command validation and application failures.
+    /// </summary>
+    public static class Season
+    {
+        /// <summary>
+        /// Returned when a create-season request omits the required league identifier.
+        /// </summary>
+        public static readonly Error LeagueIdRequired = new(
+            "Season.LeagueIdRequired",
+            "League id is required.");
+    }
+
+    /// <summary>
     /// Errors related to the admin catalog use cases.
     /// </summary>
     public static class Catalog

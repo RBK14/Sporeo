@@ -102,8 +102,10 @@ internal sealed class LongTermSyncJob(
                         target.ExternalProviderId,
                         syncResult.Value.Failed,
                         syncResult.Value.Skipped);
-                    hadFailures = true;
                 }
+
+                if (syncResult.Value.HasFailures)
+                    hadFailures = true;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {

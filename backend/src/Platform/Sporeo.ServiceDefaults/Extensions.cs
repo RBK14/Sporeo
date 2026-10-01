@@ -127,7 +127,10 @@ public static class Extensions
             Predicate = r => r.Tags.Contains("live")
         });
 
-        app.MapHealthChecks(HealthEndpointPath);
+        app.MapHealthChecks(HealthEndpointPath, new HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("ready")
+        });
 
         return app;
     }

@@ -5,7 +5,10 @@ using Quartz;
 using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
+using Sporeo.Fixtures.Application.Leagues.Data;
+using Sporeo.Fixtures.Application.Leagues.ReadModels;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Worker.Jobs.Fixtures;
 using MediatR;
 using Errors = Sporeo.Fixtures.Application.Common.Errors;
@@ -89,6 +92,84 @@ public sealed class SyncFixturesJobTests
         var act = async () => await job.Execute(CreateContext(), CancellationToken.None);
 
         await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task LongTermExecute_WhenBatchOnlyHasSkips_ShouldCompleteWithoutThrowing()
+    {
+        var leagueReadStore = Substitute.For<ILeagueReadStore>();
+        leagueReadStore.GetMonitoredLeaguesWithCurrentSeasonAsync(Arg.Any<CancellationToken>())
+            .Returns(
+            [
+                new LeagueWithCurrentSeasonReadModel(
+                    LeagueId.New(),
+                    "TheSportsDB",
+                    "4328",
+                    "2025-2026")
+            ]);
+
+        var fixtures = new List<ExternalFixtureDto>
+        {
+            new("TheSportsDB", "1", "Home vs Away", "2025-2026", DateTimeOffset.UtcNow, FixtureStatus.Scheduled, null)
+        };
+
+        var client = Substitute.For<IExternalFixturesClient>();
+        client.ProviderName.Returns("TheSportsDB");
+        client.FetchLongTermFixturesAsync("4328", "2025-2026", Arg.Any<CancellationToken>())
+            .Returns(Result.Success<IReadOnlyList<ExternalFixtureDto>>(fixtures));
+
+        var sender = Substitute.For<ISender>();
+        sender.Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Success(SyncBatchResultDto.Create(1, 0, skipped: 2, failed: 0)));
+
+        var job = new LongTermSyncJob(
+            leagueReadStore,
+            [client],
+            sender,
+            NullLogger<LongTermSyncJob>.Instance);
+
+        var act = async () => await job.Execute(Substitute.For<IJobExecutionContext>(), CancellationToken.None);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
+    public async Task LongTermExecute_WhenBatchHasFailures_ShouldThrowJobExecutionException()
+    {
+        var leagueReadStore = Substitute.For<ILeagueReadStore>();
+        leagueReadStore.GetMonitoredLeaguesWithCurrentSeasonAsync(Arg.Any<CancellationToken>())
+            .Returns(
+            [
+                new LeagueWithCurrentSeasonReadModel(
+                    LeagueId.New(),
+                    "TheSportsDB",
+                    "4328",
+                    "2025-2026")
+            ]);
+
+        var fixtures = new List<ExternalFixtureDto>
+        {
+            new("TheSportsDB", "1", "Home vs Away", "2025-2026", DateTimeOffset.UtcNow, FixtureStatus.Scheduled, null)
+        };
+
+        var client = Substitute.For<IExternalFixturesClient>();
+        client.ProviderName.Returns("TheSportsDB");
+        client.FetchLongTermFixturesAsync("4328", "2025-2026", Arg.Any<CancellationToken>())
+            .Returns(Result.Success<IReadOnlyList<ExternalFixtureDto>>(fixtures));
+
+        var sender = Substitute.For<ISender>();
+        sender.Send(Arg.Any<SyncFixturesBatchCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Result.Success(SyncBatchResultDto.Create(1, 0, skipped: 0, failed: 1)));
+
+        var job = new LongTermSyncJob(
+            leagueReadStore,
+            [client],
+            sender,
+            NullLogger<LongTermSyncJob>.Instance);
+
+        var act = async () => await job.Execute(Substitute.For<IJobExecutionContext>(), CancellationToken.None);
+
+        await act.Should().ThrowAsync<JobExecutionException>();
     }
 
     [Fact]

@@ -67,9 +67,12 @@ internal sealed class LeagueMonitoringEnabledDomainEventHandler(
                 batchResult.Value.Status,
                 batchResult.Value.Failed,
                 batchResult.Value.Skipped);
+        }
 
+        if (batchResult.Value.HasFailures)
+        {
             throw new InvalidOperationException(
-                $"Initial batch sync completed with warnings: Failed={batchResult.Value.Failed}, Skipped={batchResult.Value.Skipped}");
+                $"Initial batch sync completed with failures: Failed={batchResult.Value.Failed}, Skipped={batchResult.Value.Skipped}");
         }
     }
 }

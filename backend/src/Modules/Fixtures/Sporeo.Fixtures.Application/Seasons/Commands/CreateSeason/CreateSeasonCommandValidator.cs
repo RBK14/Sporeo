@@ -1,5 +1,6 @@
 using FluentValidation;
-using Sporeo.Fixtures.Domain.Common;
+using Sporeo.Fixtures.Application.Common;
+using DomainErrors = Sporeo.Fixtures.Domain.Common.Errors;
 
 namespace Sporeo.Fixtures.Application.Seasons.Commands.CreateSeason;
 
@@ -9,12 +10,12 @@ internal sealed class CreateSeasonCommandValidator : AbstractValidator<CreateSea
     {
         RuleFor(command => command.LeagueId)
             .NotNull()
-            .WithErrorCode(Errors.League.NotFoundCode)
-            .WithMessage("League id is required.");
+            .WithErrorCode(Errors.Season.LeagueIdRequired.Code)
+            .WithMessage(Errors.Season.LeagueIdRequired.Message);
 
         RuleFor(command => command.Name)
             .NotEmpty()
-            .WithErrorCode(Errors.Season.EmptyName.Code)
-            .WithMessage(Errors.Season.EmptyName.Message);
+            .WithErrorCode(DomainErrors.Season.EmptyName.Code)
+            .WithMessage(DomainErrors.Season.EmptyName.Message);
     }
 }

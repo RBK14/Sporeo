@@ -102,8 +102,31 @@ internal sealed class UpdateMonitoringCommandHandler(
 
         if (needsCache)
         {
-            var cachedSports = await cacheService.GetAsync<List<ExternalSportDto>>(CatalogCacheKeys.SportsCacheKey, cancellationToken) ?? [];
-            var cachedLeagues = await cacheService.GetAsync<List<ExternalLeagueDto>>(CatalogCacheKeys.LeaguesCacheKey, cancellationToken) ?? [];
+            var providerNames = request.Sports
+                .Select(s => s.ProviderName)
+                .Concat(request.Sports.SelectMany(s => s.Leagues.Select(l => l.ProviderName)))
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            var cachedSports = new List<ExternalSportDto>();
+            var cachedLeagues = new List<ExternalLeagueDto>();
+
+            foreach (var providerName in providerNames)
+            {
+                var sports = await cacheService.GetAsync<List<ExternalSportDto>>(
+                    CatalogCacheKeys.SportsKey(providerName),
+                    cancellationToken) ?? [];
+                var leagues = await cacheService.GetAsync<List<ExternalLeagueDto>>(
+                    CatalogCacheKeys.LeaguesKey(providerName),
+                    cancellationToken) ?? [];
+
+                if (sports.Count == 0 || leagues.Count == 0)
+                    return Result.Failure(Errors.Catalog.CacheExpired);
+
+                cachedSports.AddRange(sports);
+                cachedLeagues.AddRange(leagues);
+            }
 
             if (cachedSports.Count == 0 || cachedLeagues.Count == 0)
                 return Result.Failure(Errors.Catalog.CacheExpired);

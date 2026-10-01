@@ -23,8 +23,12 @@ internal sealed class GetCatalogQueryHandler(
     /// <inheritdoc />
     public async Task<Result<PagedResult<CatalogSportReadModel>>> Handle(GetCatalogQuery request, CancellationToken cancellationToken)
     {
-        var cachedSports = await cacheService.GetAsync<List<ExternalSportDto>>(CatalogCacheKeys.SportsCacheKey, cancellationToken) ?? [];
-        var cachedLeagues = await cacheService.GetAsync<List<ExternalLeagueDto>>(CatalogCacheKeys.LeaguesCacheKey, cancellationToken) ?? [];
+        var providerName = externalClient.ProviderName;
+        var sportsCacheKey = CatalogCacheKeys.SportsKey(providerName);
+        var leaguesCacheKey = CatalogCacheKeys.LeaguesKey(providerName);
+
+        var cachedSports = await cacheService.GetAsync<List<ExternalSportDto>>(sportsCacheKey, cancellationToken) ?? [];
+        var cachedLeagues = await cacheService.GetAsync<List<ExternalLeagueDto>>(leaguesCacheKey, cancellationToken) ?? [];
 
         if (cachedSports.Count == 0 || cachedLeagues.Count == 0)
         {
@@ -40,10 +44,11 @@ internal sealed class GetCatalogQueryHandler(
             cachedSports = externalSports.Value.ToList();
             cachedLeagues = externalLeagues.Value.ToList();
 
-            await cacheService.SetAsync(CatalogCacheKeys.SportsCacheKey, externalSports.Value, TimeSpan.FromHours(12), cancellationToken);
-            await cacheService.SetAsync(CatalogCacheKeys.LeaguesCacheKey, externalLeagues.Value, TimeSpan.FromHours(12), cancellationToken);
+            await cacheService.SetAsync(sportsCacheKey, externalSports.Value, TimeSpan.FromHours(12), cancellationToken);
+            await cacheService.SetAsync(leaguesCacheKey, externalLeagues.Value, TimeSpan.FromHours(12), cancellationToken);
         }
 
+        // Catalog size is small (dozens of sports); page in memory after cache load.
         var pagedSportDtos = cachedSports
             .Skip((int)request.Pagination.Offset)
             .Take(request.Pagination.PageSize)
