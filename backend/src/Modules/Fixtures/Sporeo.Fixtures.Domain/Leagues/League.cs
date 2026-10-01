@@ -217,6 +217,19 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
     }
 
     /// <summary>
+    /// Unlocks the league for external synchronization, allowing future updates from providers to be applied.
+    /// </summary>
+    /// <returns>A successful result when the league is unlocked; otherwise, a failure when the league cannot be modified.</returns>
+    public Result UnlockForSync()
+    {
+        var guard = EnsureModifiable();
+        if (guard.IsFailure) return guard;
+
+        IsManuallyEdited = false;
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Soft-deletes the league.
     /// </summary>
     /// <returns>A successful result. Idempotent when the league is already deleted.</returns>

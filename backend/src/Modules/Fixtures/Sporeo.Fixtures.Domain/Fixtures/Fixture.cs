@@ -313,6 +313,19 @@ public sealed class Fixture : AggregateRoot<FixtureId>, IAuditable, IDeletable
     }
 
     /// <summary>
+    /// Unlocks the fixture for external synchronization, allowing future updates from providers to be applied.
+    /// </summary>
+    /// <returns>A successful result when the fixture is unlocked; otherwise, a failure when the fixture cannot be modified.</returns>
+    public Result UnlockForSync()
+    {
+        var guard = EnsureModifiable();
+        if (guard.IsFailure) return guard;
+
+        IsManuallyEdited = false;
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Soft-deletes the fixture.
     /// </summary>
     /// <returns>A successful result. Idempotent when the fixture is already deleted.</returns>

@@ -215,6 +215,19 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
     }
 
     /// <summary>
+    /// Unlocks the venue for external synchronization, allowing future updates from providers to be applied.
+    /// </summary>
+    /// <returns>A successful result when the venue is unlocked; otherwise, a failure when the venue cannot be modified.</returns>
+    public Result UnlockForSync()
+    {
+        var guard = EnsureModifiable();
+        if (guard.IsFailure) return guard;
+
+        IsManuallyEdited = false;
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Soft-deletes the venue.
     /// </summary>
     /// <returns>A successful result. Idempotent when the venue is already deleted.</returns>
