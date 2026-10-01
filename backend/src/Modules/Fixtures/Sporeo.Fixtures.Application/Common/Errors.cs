@@ -25,6 +25,20 @@ public static class Errors
         public static readonly Error InvalidRequest = new(
             "Catalog.InvalidRequest",
             "Provider name is missing in the request.");
+
+        /// <summary>
+        /// Returned when a supplied local id does not match the provider identity in the request.
+        /// </summary>
+        public static readonly Error IdentityMismatch = new(
+            "Catalog.IdentityMismatch",
+            "The supplied local identifier does not match the provider identity.");
+
+        /// <summary>
+        /// Returned when a catalog item referenced in a mutation is missing from the cached provider catalog.
+        /// </summary>
+        public static readonly Error ItemNotFoundInCache = new(
+            "Catalog.ItemNotFoundInCache",
+            "A referenced catalog item was not found in the cached provider catalog.");
     }
 
     /// <summary>

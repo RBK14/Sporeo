@@ -42,6 +42,16 @@ public interface ILeagueRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets leagues matching the given identifiers.
+    /// </summary>
+    /// <param name="ids">The league identifiers.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The matching leagues. Missing identifiers are omitted.</returns>
+    Task<IReadOnlyList<League>> GetByIdsAsync(
+        IEnumerable<LeagueId> ids,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Registers a new league for persistence.
     /// </summary>
     /// <param name="league">The league to add.</param>

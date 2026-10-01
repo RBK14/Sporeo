@@ -27,6 +27,7 @@ public class CatalogMappingConfigTests
         var source = new PagedResult<CatalogSportReadModel>(
             [
                 new CatalogSportReadModel(
+                    null,
                     "1",
                     "TheSportsDB",
                     "Soccer",

@@ -47,5 +47,27 @@ internal sealed class LeagueRepository(FixturesDbContext dbContext) : ILeagueRep
         return results;
     }
 
+    public async Task<IReadOnlyList<League>> GetByIdsAsync(
+        IEnumerable<LeagueId> ids,
+        CancellationToken cancellationToken = default)
+    {
+        var idList = ids as IList<LeagueId> ?? ids.ToList();
+        if (idList.Count == 0)
+            return [];
+
+        var results = new List<League>();
+        foreach (var chunk in idList.Chunk(ProviderIdChunkSize))
+        {
+            var chunkIds = chunk.ToArray();
+            var leagues = await dbContext.Leagues
+                .Where(league => chunkIds.Contains(league.Id))
+                .ToListAsync(cancellationToken);
+
+            results.AddRange(leagues);
+        }
+
+        return results;
+    }
+
     public void Add(League league) => dbContext.Leagues.Add(league);
 }

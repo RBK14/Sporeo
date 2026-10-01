@@ -42,6 +42,16 @@ public interface ISportRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets sports matching the given identifiers.
+    /// </summary>
+    /// <param name="ids">The sport identifiers.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The matching sports. Missing identifiers are omitted.</returns>
+    Task<IReadOnlyList<Sport>> GetByIdsAsync(
+        IEnumerable<SportId> ids,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Registers a new sport for persistence.
     /// </summary>
     /// <param name="sport">The sport to add.</param>

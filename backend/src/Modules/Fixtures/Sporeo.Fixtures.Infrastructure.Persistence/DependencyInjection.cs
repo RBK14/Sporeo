@@ -149,6 +149,7 @@ public static class DependencyInjection
         services.AddScoped<IFixtureReadStore, FixtureReadStore>();
         services.AddScoped<IVenueReadStore, VenueReadStore>();
         services.AddScoped<ILeagueReadStore, LeagueReadStore>();
+        services.AddScoped<ISportReadStore, SportReadStore>();
 
         return services;
     }

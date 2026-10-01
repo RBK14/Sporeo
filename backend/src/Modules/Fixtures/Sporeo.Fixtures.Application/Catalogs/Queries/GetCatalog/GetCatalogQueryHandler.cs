@@ -5,6 +5,9 @@ using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Catalogs.Abstractions;
 using Sporeo.Fixtures.Application.Catalogs.Common;
 using Sporeo.Fixtures.Application.Leagues.Data;
+using Sporeo.Fixtures.Application.Sports.Data;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 
@@ -13,11 +16,10 @@ namespace Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 /// </summary>
 internal sealed class GetCatalogQueryHandler(
     ILeagueReadStore leagueReadStore,
+    ISportReadStore sportReadStore,
     ICacheService cacheService,
     IExternalCatalogClient externalClient) : IQueryHandler<GetCatalogQuery, PagedResult<CatalogSportReadModel>>
 {
-    // todo: Dodać SportId do ReadModel i przekazywać je jeżeli Sport istnieje w DB
-
     /// <inheritdoc />
     public async Task<Result<PagedResult<CatalogSportReadModel>>> Handle(GetCatalogQuery request, CancellationToken cancellationToken)
     {
@@ -55,39 +57,72 @@ internal sealed class GetCatalogQueryHandler(
                 request.Pagination));
         }
 
-        var sportNames = pagedSportDtos.Select(s => s.Name).ToHashSet();
+        var sportKeys = pagedSportDtos
+            .Select(s => (s.ProviderName, s.Name))
+            .ToHashSet();
+
         var pagedLeaguesDto = cachedLeagues
-            .Where(l => sportNames.Contains(l.ProviderSportName))
+            .Where(l => sportKeys.Contains((l.ProviderName, l.ProviderSportName)))
             .ToList();
 
-        var providerName = pagedSportDtos.First().ProviderName;
-        var leagueProviderIds = pagedLeaguesDto.Select(l => l.ProviderId).ToList();
+        var sportStatusesByProvider = new Dictionary<(string ProviderName, string ProviderId), SportId>();
+        foreach (var group in pagedSportDtos.GroupBy(s => s.ProviderName, StringComparer.Ordinal))
+        {
+            var statuses = await sportReadStore.GetSportStatusesAsync(
+                group.Key,
+                group.Select(s => s.ProviderId),
+                cancellationToken);
 
-        var leagueStatusesMap = await leagueReadStore.GetLeagueStatusesAsync(
-            providerName,
-            leagueProviderIds,
-            cancellationToken);
+            foreach (var (providerId, sportId) in statuses)
+                sportStatusesByProvider[(group.Key, providerId)] = sportId;
+        }
+
+        var leagueStatusesByProvider = new Dictionary<(string ProviderName, string ProviderId), (LeagueId Id, bool IsMonitored)>();
+        foreach (var group in pagedLeaguesDto.GroupBy(l => l.ProviderName, StringComparer.Ordinal))
+        {
+            var statuses = await leagueReadStore.GetLeagueStatusesAsync(
+                group.Key,
+                group.Select(l => l.ProviderId),
+                cancellationToken);
+
+            foreach (var (providerId, status) in statuses)
+                leagueStatusesByProvider[(group.Key, providerId)] = status;
+        }
 
         var pagedSports = pagedSportDtos
-        .Select(sport => new CatalogSportReadModel(
-            sport.ProviderId,
-            sport.ProviderName,
-            sport.Name,
-            pagedLeaguesDto
-                .Where(league => league.ProviderSportName == sport.Name)
-                .Select(league =>
-                {
-                    var existsInDb = leagueStatusesMap.TryGetValue(league.ProviderId, out var dbStatus);
+            .Select(sport =>
+            {
+                SportId? localSportId = sportStatusesByProvider.TryGetValue(
+                    (sport.ProviderName, sport.ProviderId),
+                    out var sportId)
+                    ? sportId
+                    : null;
 
-                    return new CatalogLeagueReadModel(
-                        existsInDb ? dbStatus.Id : null,
-                        league.ProviderId,
-                        league.ProviderName,
-                        league.Name,
-                        existsInDb && dbStatus.IsMonitored);
-                })
-                .ToList()))
-        .ToList();
+                return new CatalogSportReadModel(
+                    localSportId,
+                    sport.ProviderId,
+                    sport.ProviderName,
+                    sport.Name,
+                    pagedLeaguesDto
+                        .Where(league =>
+                            league.ProviderName == sport.ProviderName
+                            && league.ProviderSportName == sport.Name)
+                        .Select(league =>
+                        {
+                            var existsInDb = leagueStatusesByProvider.TryGetValue(
+                                (league.ProviderName, league.ProviderId),
+                                out var dbStatus);
+
+                            return new CatalogLeagueReadModel(
+                                existsInDb ? dbStatus.Id : null,
+                                league.ProviderId,
+                                league.ProviderName,
+                                league.Name,
+                                existsInDb && dbStatus.IsMonitored);
+                        })
+                        .ToList());
+            })
+            .ToList();
 
         return Result.Success(new PagedResult<CatalogSportReadModel>(
             pagedSports,

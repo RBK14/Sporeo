@@ -25,5 +25,17 @@ internal sealed class TypedIdMappingConfig : IRegister
 
         config.NewConfig<SeasonId, Guid>()
             .MapWith(src => src.Value);
+
+        config.NewConfig<Guid, SportId>()
+            .MapWith(src => SportId.FromValue(src));
+
+        config.NewConfig<Guid, LeagueId>()
+            .MapWith(src => LeagueId.FromValue(src));
+
+        config.NewConfig<Guid?, SportId?>()
+            .MapWith(src => src.HasValue ? SportId.FromValue(src.Value) : null);
+
+        config.NewConfig<Guid?, LeagueId?>()
+            .MapWith(src => src.HasValue ? LeagueId.FromValue(src.Value) : null);
     }
 }

@@ -47,5 +47,27 @@ internal sealed class SportRepository(FixturesDbContext dbContext) : ISportRepos
         return results;
     }
 
+    public async Task<IReadOnlyList<Sport>> GetByIdsAsync(
+        IEnumerable<SportId> ids,
+        CancellationToken cancellationToken = default)
+    {
+        var idList = ids as IList<SportId> ?? ids.ToList();
+        if (idList.Count == 0)
+            return [];
+
+        var results = new List<Sport>();
+        foreach (var chunk in idList.Chunk(ProviderIdChunkSize))
+        {
+            var chunkIds = chunk.ToArray();
+            var sports = await dbContext.Sports
+                .Where(sport => chunkIds.Contains(sport.Id))
+                .ToListAsync(cancellationToken);
+
+            results.AddRange(sports);
+        }
+
+        return results;
+    }
+
     public void Add(Sport sport) => dbContext.Sports.Add(sport);
 }
