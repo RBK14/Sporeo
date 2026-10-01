@@ -1,4 +1,5 @@
 using Sporeo.Fixtures.Api;
+using Sporeo.Fixtures.Api.Exceptions;
 using Sporeo.Fixtures.Api.Extensions;
 using Sporeo.Fixtures.Api.OpenApi;
 using Sporeo.Fixtures.Application;
@@ -15,10 +16,16 @@ builder.Services
     .AddCaching(builder.Configuration)
     .AddPresentation(builder.Configuration);
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 var app = builder.Build();
 
+app.UseExceptionHandler();
 app.MapDefaultEndpoints();
 app.MapOpenApiDocumentation();
 app.MapEndpoints();
 
 app.Run();
+
+public partial class Program;

@@ -11,12 +11,20 @@ internal static class ResultExtensions
         if (error is ValidationError validationError)
         {
             var errors = validationError.Errors
-                .GroupBy(e => e.Code)
+                .GroupBy(e => string.IsNullOrWhiteSpace(e.PropertyName) ? e.Code : e.PropertyName!)
                 .ToDictionary(
                     g => g.Key,
                     g => g.Select(e => e.Message).ToArray());
 
-            return Results.ValidationProblem(errors);
+            return Results.ValidationProblem(
+                errors,
+                extensions: new Dictionary<string, object?>
+                {
+                    ["codes"] = validationError.Errors
+                        .Select(e => e.Code)
+                        .Distinct()
+                        .ToArray()
+                });
         }
 
         var statusCode = error.Code switch
@@ -30,6 +38,8 @@ internal static class ResultExtensions
                 => StatusCodes.Status404NotFound,
 
             var code when code == AppErrors.Catalog.InvalidRequest.Code
+                || code == AppErrors.Catalog.IdentityMismatch.Code
+                || code == AppErrors.Catalog.ItemNotFoundInCache.Code
                 || code == DomainErrors.Sport.EmptyName.Code
                 || code == DomainErrors.League.EmptyName.Code
                 || code == DomainErrors.Season.EmptyName.Code
@@ -37,6 +47,8 @@ internal static class ResultExtensions
                 || code == DomainErrors.Fixture.EmptyName.Code
                 || code == DomainErrors.League.InconsistentHierarchy.Code
                 || code == DomainErrors.Season.InconsistentHierarchy.Code
+                || code == DomainErrors.League.EmptyProviderName.Code
+                || code == DomainErrors.League.EmptyProviderId.Code
                 => StatusCodes.Status400BadRequest,
 
             var code when code == AppErrors.Catalog.CacheExpired.Code
