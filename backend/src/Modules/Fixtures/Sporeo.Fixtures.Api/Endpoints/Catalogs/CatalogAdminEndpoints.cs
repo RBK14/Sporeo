@@ -1,4 +1,4 @@
-﻿using MapsterMapper;
+using MapsterMapper;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Sporeo.BuildingBlocks.Application.Pagination;
@@ -11,7 +11,7 @@ using Sporeo.Fixtures.Contracts.Common;
 
 namespace Sporeo.Fixtures.Api.Endpoints.Catalogs;
 
-public sealed class CatalogEndpoints : IEndpoint
+public sealed class CatalogAdminEndpoints : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
