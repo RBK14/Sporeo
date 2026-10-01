@@ -70,7 +70,7 @@ internal sealed class NominatimGeocodingService(
 
         try
         {
-            await rateLimiter.WaitAsync(cancellationToken);
+            await using var lease = await rateLimiter.AcquireAsync(cancellationToken);
 
             using var response = await httpClient.GetAsync(
                 requestUri,

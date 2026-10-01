@@ -81,6 +81,9 @@ internal class FixtureConfiguration : IEntityTypeConfiguration<Fixture>
         builder.Property(x => x.StartDate)
             .IsRequired();
 
+        builder.HasIndex(x => x.StartDate)
+            .HasDatabaseName("IX_fixtures_StartDate");
+
         builder.Property(x => x.Status)
             .HasConversion<string>()
             .HasMaxLength(50)

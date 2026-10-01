@@ -23,7 +23,7 @@ internal sealed class TheSportsDbFixtureMapper(ILogger<TheSportsDbFixtureMapper>
         if (!TryParseStartDate(apiEvent.StrTimestamp, apiEvent.DateEvent, apiEvent.StrTime, out var startDate))
             return MapResult.Dropped(DropReasonInvalidDate);
 
-        // todo: consider remove veanue ID from mapping, as it is not reliable and we are not using it for venue upsert anyway
+        // Venue external id is not used for venue upsert; name/address matching is preferred.
         ExternalFixtureVenueDto? venueDto = null;
         if (!string.IsNullOrWhiteSpace(apiEvent.StrVenue))
         {

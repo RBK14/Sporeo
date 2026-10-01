@@ -32,7 +32,7 @@ public sealed class GeocodingServiceTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Coordinates.Should().Be(coordinates);
         handler.CallCount.Should().Be(0);
-        await rateLimiter.DidNotReceiveWithAnyArgs().WaitAsync(default);
+        await rateLimiter.DidNotReceiveWithAnyArgs().AcquireAsync(default);
     }
 
     [Fact]
@@ -51,7 +51,7 @@ public sealed class GeocodingServiceTests
         result.IsFailure.Should().BeTrue();
         result.Error.Code.Should().Be("Geocoding.NotFound");
         handler.CallCount.Should().Be(0);
-        await rateLimiter.DidNotReceiveWithAnyArgs().WaitAsync(default);
+        await rateLimiter.DidNotReceiveWithAnyArgs().AcquireAsync(default);
     }
 
     [Fact]
@@ -62,6 +62,8 @@ public sealed class GeocodingServiceTests
             .Returns((NominatimGeocodingService.GeocodingCacheEntry?)null);
 
         var rateLimiter = Substitute.For<IGeocodingRateLimiter>();
+        rateLimiter.AcquireAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => new ValueTask<IAsyncDisposable>(NoOpAsyncDisposable.Instance));
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent("[]", Encoding.UTF8, "application/json")
@@ -87,6 +89,8 @@ public sealed class GeocodingServiceTests
             .Returns((NominatimGeocodingService.GeocodingCacheEntry?)null);
 
         var rateLimiter = Substitute.For<IGeocodingRateLimiter>();
+        rateLimiter.AcquireAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => new ValueTask<IAsyncDisposable>(NoOpAsyncDisposable.Instance));
         HttpRequestMessage? captured = null;
         var handler = new RecordingHandler(request =>
         {
@@ -108,7 +112,7 @@ public sealed class GeocodingServiceTests
         handler.CallCount.Should().Be(1);
         captured.Should().NotBeNull();
         captured!.RequestUri!.ToString().Should().Contain("q=");
-        await rateLimiter.Received(1).WaitAsync(Arg.Any<CancellationToken>());
+        await rateLimiter.Received(1).AcquireAsync(Arg.Any<CancellationToken>());
         await cache.Received(1).SetAsync(
             Arg.Any<string>(),
             Arg.Is<NominatimGeocodingService.GeocodingCacheEntry>(entry => entry.IsFound),
@@ -124,6 +128,8 @@ public sealed class GeocodingServiceTests
             .Returns((NominatimGeocodingService.GeocodingCacheEntry?)null);
 
         var rateLimiter = Substitute.For<IGeocodingRateLimiter>();
+        rateLimiter.AcquireAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => new ValueTask<IAsyncDisposable>(NoOpAsyncDisposable.Instance));
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.TooManyRequests));
         var sut = CreateSut(handler, cache, rateLimiter);
 
@@ -173,5 +179,12 @@ public sealed class GeocodingServiceTests
             CallCount++;
             return Task.FromResult(factory(request));
         }
+    }
+
+    private sealed class NoOpAsyncDisposable : IAsyncDisposable
+    {
+        public static readonly NoOpAsyncDisposable Instance = new();
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }
 }
