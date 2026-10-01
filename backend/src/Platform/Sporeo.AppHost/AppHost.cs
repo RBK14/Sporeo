@@ -22,6 +22,11 @@ builder.AddProject<Projects.Sporeo_Fixtures_Api>("fixtures-api")
     .WithReference(fixturesDb)
     .WithReference(redis)
     .WithEnvironment("ExternalProviders__TheSportsDb__ApiKey", theSportsDbApiKey)
+    .WithUrlForEndpoint("http", url =>
+    {
+        url.DisplayText = "API Reference";
+        url.Url = "/scalar/v1";
+    })
     .WaitFor(redis)
     .WaitForCompletion(migrationTask);
 

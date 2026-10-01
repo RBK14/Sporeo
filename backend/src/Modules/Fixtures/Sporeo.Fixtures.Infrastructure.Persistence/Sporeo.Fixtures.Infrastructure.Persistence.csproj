@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -8,16 +8,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<PackageReference Include="Dapper" Version="2.1.66" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.9" />
-	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" Version="10.0.9" />
-	<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.9" />
+	<PackageReference Include="Dapper" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Design" >
+	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  <PrivateAssets>all</PrivateAssets>
+	</PackageReference>
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer.NetTopologySuite" />
+	<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+	<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+	<PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure.Persistence\Sporeo.BuildingBlocks.Infrastructure.Persistence.csproj" />
-    <ProjectReference Include="..\..\..\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure.Messaging\Sporeo.BuildingBlocks.Infrastructure.Messaging.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\Sporeo.BuildingBlocks.Infrastructure\Sporeo.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Application\Sporeo.Fixtures.Application.csproj" />
     <ProjectReference Include="..\Sporeo.Fixtures.Domain\Sporeo.Fixtures.Domain.csproj" />
   </ItemGroup>

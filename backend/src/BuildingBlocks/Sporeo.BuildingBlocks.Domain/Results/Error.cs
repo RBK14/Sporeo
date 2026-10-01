@@ -8,6 +8,11 @@
 public record Error(string Code, string Message)
 {
     /// <summary>
+    /// Gets the property name associated with a validation error, when available.
+    /// </summary>
+    public string? PropertyName { get; init; }
+
+    /// <summary>
     /// Represents the absence of an error. Used by successful <see cref="Result"/> instances.
     /// </summary>
     public static readonly Error None = new(string.Empty, string.Empty);

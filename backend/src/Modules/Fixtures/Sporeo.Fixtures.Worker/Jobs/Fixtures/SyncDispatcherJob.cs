@@ -1,8 +1,9 @@
 using Quartz;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
+using Sporeo.Fixtures.Application.Leagues.Data;
 
 namespace Sporeo.Fixtures.Worker.Jobs.Fixtures;
 
+[DisallowConcurrentExecution]
 internal sealed class SyncDispatcherJob(
     ILeagueReadStore leagueReadStore,
     ILogger<SyncDispatcherJob> logger) : IJob

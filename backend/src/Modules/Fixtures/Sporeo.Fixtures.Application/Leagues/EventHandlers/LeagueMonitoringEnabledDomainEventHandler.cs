@@ -1,9 +1,9 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Messaging.DomainEvents;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
+using Sporeo.Fixtures.Application.Leagues.Data;
 using Sporeo.Fixtures.Domain.Leagues.Events;
 
 namespace Sporeo.Fixtures.Application.Leagues.EventHandlers;
@@ -57,6 +57,22 @@ internal sealed class LeagueMonitoringEnabledDomainEventHandler(
                 batchResult.Error);
 
             throw new InvalidOperationException($"Initial batch sync failed: {batchResult.Error.Code}");
+        }
+
+        if (batchResult.Value.HasWarnings)
+        {
+            logger.LogWarning(
+                "Initial sync batch for league {LeagueId} completed with partial success. Status={Status}, Failed={Failed}, Skipped={Skipped}",
+                leagueData.ExternalProviderId,
+                batchResult.Value.Status,
+                batchResult.Value.Failed,
+                batchResult.Value.Skipped);
+        }
+
+        if (batchResult.Value.HasFailures)
+        {
+            throw new InvalidOperationException(
+                $"Initial batch sync completed with failures: Failed={batchResult.Value.Failed}, Skipped={batchResult.Value.Skipped}");
         }
     }
 }

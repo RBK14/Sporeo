@@ -1,5 +1,5 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 
 namespace Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 

@@ -15,10 +15,10 @@ internal static class PagedQueryValidationRules
         AbstractValidator<T> validator,
         Func<T, PaginationParams> paginationSelector)
     {
-        validator.RuleFor(query => paginationSelector(query).Page)
+        validator.RuleFor(query => paginationSelector(query).PageNumber)
             .GreaterThanOrEqualTo(1)
-            .WithErrorCode("Pagination.InvalidPage")
-            .WithMessage("Page must be greater than or equal to 1.");
+            .WithErrorCode("Pagination.InvalidPageNumber")
+            .WithMessage("PageNumber must be greater than or equal to 1.");
 
         validator.RuleFor(query => paginationSelector(query).PageSize)
             .InclusiveBetween(1, MaxPageSize)

@@ -1,15 +1,18 @@
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Catalogs.Queries.GetCatalog;
 
 /// <summary>
 /// Sport entry returned by the admin catalog query, including nested leagues.
 /// </summary>
+/// <param name="Id">The local sport identifier when the sport already exists; otherwise <see langword="null"/>.</param>
 /// <param name="ProviderId">The sport identifier assigned by the external provider.</param>
 /// <param name="ProviderName">The external provider name.</param>
 /// <param name="Name">The display name of the sport.</param>
 /// <param name="Leagues">The leagues associated with this sport in the provider catalog.</param>
 public sealed record CatalogSportReadModel(
+    SportId? Id,
     string ProviderId,
     string ProviderName,
     string Name,

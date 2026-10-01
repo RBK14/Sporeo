@@ -1,6 +1,6 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Sports.Data;
 using Sporeo.Fixtures.Domain.Sports;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 

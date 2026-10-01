@@ -9,14 +9,16 @@ namespace Sporeo.Fixtures.Infrastructure.Integration.Providers.Nominatim;
 public interface IGeocodingRateLimiter
 {
     /// <summary>
-    /// Waits until a geocoding request is permitted.
+    /// Acquires an exclusive lease that enforces the minimum request interval for the duration of the HTTP call.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the wait.</param>
-    ValueTask WaitAsync(CancellationToken cancellationToken = default);
+    /// <returns>A lease that must be disposed after the HTTP call completes.</returns>
+    ValueTask<IAsyncDisposable> AcquireAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
 /// Serializes outbound Nominatim calls and enforces a minimum interval between HTTP attempts.
+/// The semaphore is held for the entire HTTP call so concurrent requests cannot overlap.
 /// </summary>
 internal sealed class NominatimRateLimiter : IGeocodingRateLimiter, IDisposable
 {
@@ -36,7 +38,7 @@ internal sealed class NominatimRateLimiter : IGeocodingRateLimiter, IDisposable
     }
 
     /// <inheritdoc />
-    public async ValueTask WaitAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<IAsyncDisposable> AcquireAsync(CancellationToken cancellationToken = default)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -51,10 +53,13 @@ internal sealed class NominatimRateLimiter : IGeocodingRateLimiter, IDisposable
 
             _nextAllowedTimestamp = _timeProvider.GetTimestamp()
                 + TimeSpanToTimestampDelta(_minInterval);
+
+            return new Lease(_gate);
         }
-        finally
+        catch
         {
             _gate.Release();
+            throw;
         }
     }
 
@@ -82,4 +87,17 @@ internal sealed class NominatimRateLimiter : IGeocodingRateLimiter, IDisposable
 
     /// <inheritdoc />
     public void Dispose() => _gate.Dispose();
+
+    private sealed class Lease(SemaphoreSlim gate) : IAsyncDisposable
+    {
+        private int _disposed;
+
+        public ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+                gate.Release();
+
+            return ValueTask.CompletedTask;
+        }
+    }
 }

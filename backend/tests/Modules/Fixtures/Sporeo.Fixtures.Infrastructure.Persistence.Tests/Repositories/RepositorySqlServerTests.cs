@@ -1,10 +1,10 @@
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Fixtures.Data;
+using Sporeo.Fixtures.Application.Venues.Data;
+using Sporeo.Fixtures.Application.Sports.Data;
+using Sporeo.Fixtures.Application.Leagues.Data;
+using Sporeo.Fixtures.Application.Seasons.Data;
 using Sporeo.Fixtures.Domain.Fixtures;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons;
@@ -15,7 +15,7 @@ using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
-using Sporeo.Fixtures.Infrastructure.Persistence.Context;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Tests;
 
@@ -46,13 +46,7 @@ public sealed class RepositorySqlServerTests
 
             var sport = Sport.Create("Football", "provider", "sport-1").Value;
             var league = League.CreateFromProvider(sport.Id, "Premier League", "England", "provider", "league-1").Value;
-            var season = Season.CreateFromProvider(
-                league.Id,
-                "2025/26",
-                new DateTimeOffset(2025, 8, 1, 0, 0, 0, TimeSpan.Zero),
-                new DateTimeOffset(2026, 5, 31, 0, 0, 0, TimeSpan.Zero),
-                "provider",
-                "season-1").Value;
+            var season = Season.Create(league.Id, "2025/26", "provider", "season-1").Value;
             var venue = Venue.CreateFromProvider("Stadium", "provider", "venue-1").Value;
             var fixture = Fixture.CreateFromProvider(
                 sport.Id,

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
-using Sporeo.Fixtures.Infrastructure.Persistence.Context;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
 
 #nullable disable
 
@@ -127,6 +127,9 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                     b.HasIndex("SeasonId");
 
                     b.HasIndex("SportId");
+
+                    b.HasIndex("StartDate")
+                        .HasDatabaseName("IX_fixtures_StartDate");
 
                     b.HasIndex("VenueId");
 

@@ -1,17 +1,19 @@
 ﻿namespace Sporeo.Fixtures.Application.Catalogs.Common;
 
 /// <summary>
-/// Redis cache keys for the admin sports and leagues catalog.
+/// Redis cache keys for the admin sports and leagues catalog, scoped per external provider.
 /// </summary>
 internal static class CatalogCacheKeys
 {
     /// <summary>
-    /// Cache key for the full sports catalog payload.
+    /// Builds the cache key for the sports catalog of the specified provider.
     /// </summary>
-    public static readonly string SportsCacheKey = "admin:catalog:sports";
+    public static string SportsKey(string providerName) =>
+        $"admin:catalog:{providerName}:sports";
 
     /// <summary>
-    /// Cache key for the full leagues catalog payload.
+    /// Builds the cache key for the leagues catalog of the specified provider.
     /// </summary>
-    public static readonly string LeaguesCacheKey = "admin:catalog:leagues";
+    public static string LeaguesKey(string providerName) =>
+        $"admin:catalog:{providerName}:leagues";
 }

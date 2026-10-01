@@ -247,6 +247,19 @@ public class FixtureTests
         fixture.ChangeStatus(FixtureStatus.Postponed).Error.Should().Be(Errors.Fixture.Deleted);
     }
 
+    [Fact]
+    public void UnlockForSync_ShouldAllowExternalSyncAgain()
+    {
+        var fixture = CreateManualFixture();
+        fixture.IsManuallyEdited.Should().BeTrue();
+
+        var unlock = fixture.UnlockForSync();
+
+        unlock.IsSuccess.Should().BeTrue();
+        fixture.IsManuallyEdited.Should().BeFalse();
+        fixture.SyncExternalData(SportId, LeagueId, SeasonId, "Provider Update", StartDate).IsSuccess.Should().BeTrue();
+    }
+
     private static Fixture CreateManualFixture()
     {
         return Fixture.CreateManually(SportId, LeagueId, SeasonId, "Home vs Away", StartDate).Value;

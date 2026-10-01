@@ -53,11 +53,16 @@ public static class Errors
         public static readonly Error InvalidStatusTransition = new("Fixture.InvalidStatusTransition", "The requested status transition is not allowed.");
 
         /// <summary>
+        /// Stable code for fixture-not-found failures.
+        /// </summary>
+        public const string NotFoundCode = "Fixture.NotFound";
+
+        /// <summary>
         /// Returned when a fixture with the specified identifier cannot be found.
         /// </summary>
         /// <param name="fixtureId">The identifier of the fixture that could not be found.</param>
         public static Error NotFound(FixtureId fixtureId) =>
-            new("Fixture.NotFound", $"Fixture with ID '{fixtureId.Value}' was not found.");
+            new(NotFoundCode, $"Fixture with ID '{fixtureId.Value}' was not found.");
     }
 
     /// <summary>
@@ -91,11 +96,16 @@ public static class Errors
         public static readonly Error LockedForSync = new("Venue.LockedForSync", "Cannot synchronize a venue that has been manually edited.");
 
         /// <summary>
+        /// Stable code for venue-not-found failures.
+        /// </summary>
+        public const string NotFoundCode = "Venue.NotFound";
+
+        /// <summary>
         /// Returned when a venue with the specified identifier cannot be found.
         /// </summary>
         /// <param name="venueId">The identifier of the venue that could not be found.</param>
         public static Error NotFound(VenueId venueId) =>
-            new("Venue.NotFound", $"Venue with ID '{venueId.Value}' was not found.");
+            new(NotFoundCode, $"Venue with ID '{venueId.Value}' was not found.");
 
         /// <summary>
         /// Errors related to venue geographic coordinates.
@@ -151,11 +161,16 @@ public static class Errors
         public static readonly Error Deleted = new("Sport.Deleted", "Cannot modify a deleted sport.");
 
         /// <summary>
+        /// Stable code for sport-not-found failures.
+        /// </summary>
+        public const string NotFoundCode = "Sport.NotFound";
+
+        /// <summary>
         /// Returned when a sport with the specified identifier cannot be found.
         /// </summary>
         /// <param name="sportId">The identifier of the sport that could not be found.</param>
         public static Error NotFound(SportId sportId) =>
-            new("Sport.NotFound", $"Sport with ID '{sportId.Value}' was not found.");
+            new(NotFoundCode, $"Sport with ID '{sportId.Value}' was not found.");
     }
 
     /// <summary>
@@ -189,18 +204,23 @@ public static class Errors
         public static readonly Error LockedForSync = new("League.LockedForSync", "Cannot synchronize a league that has been manually edited.");
 
         /// <summary>
+        /// Stable code for league-not-found failures.
+        /// </summary>
+        public const string NotFoundCode = "League.NotFound";
+
+        /// <summary>
         /// Returned when a league with the specified identifier cannot be found.
         /// </summary>
         /// <param name="leagueId">The identifier of the league that could not be found.</param>
         public static Error NotFound(LeagueId leagueId) =>
-            new("League.NotFound", $"League with ID '{leagueId.Value}' was not found.");
+            new(NotFoundCode, $"League with ID '{leagueId.Value}' was not found.");
 
         /// <summary>
         /// Returned when a league with the specified external identifier cannot be found.
         /// </summary>
         /// <param name="externalLeagueId">The external identifier of the league that could not be found.</param>
         public static Error NotFound(string externalLeagueId) =>
-            new("League.NotFound", $"League with external ID '{externalLeagueId}' was not found.");
+            new(NotFoundCode, $"League with external ID '{externalLeagueId}' was not found.");
 
         /// <summary>
         /// Returned when a league is associated with a sport that does not match the expected sport.
@@ -229,11 +249,6 @@ public static class Errors
         public static readonly Error EmptyProviderId = new("Season.EmptyProviderId", "External provider ID is required.");
 
         /// <summary>
-        /// Returned when a season start date is not before its end date.
-        /// </summary>
-        public static readonly Error InvalidDateRange = new("Season.InvalidDateRange", "Season start date must be before end date.");
-
-        /// <summary>
         /// Returned when an operation targets a soft-deleted season.
         /// </summary>
         public static readonly Error Deleted = new("Season.Deleted", "Cannot modify a deleted season.");
@@ -244,11 +259,16 @@ public static class Errors
         public static readonly Error LockedForSync = new("Season.LockedForSync", "Cannot synchronize a season that has been manually edited.");
 
         /// <summary>
+        /// Stable code for season-not-found failures.
+        /// </summary>
+        public const string NotFoundCode = "Season.NotFound";
+
+        /// <summary>
         /// Returned when a season with the specified identifier cannot be found.
         /// </summary>
         /// <param name="seasonId">The identifier of the season that could not be found.</param>
         public static Error NotFound(SeasonId seasonId) =>
-            new("Season.NotFound", $"Season with ID '{seasonId.Value}' was not found.");
+            new(NotFoundCode, $"Season with ID '{seasonId.Value}' was not found.");
 
         /// <summary>
         /// Returned when a season is associated with a league that does not match the expected league.

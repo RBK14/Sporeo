@@ -1,6 +1,6 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Venues.Abstractions.ReadStores;
+using Sporeo.Fixtures.Application.Venues.Data;
 using Sporeo.Fixtures.Domain.Common;
 
 namespace Sporeo.Fixtures.Application.Venues.Queries.GetVenueDetails;

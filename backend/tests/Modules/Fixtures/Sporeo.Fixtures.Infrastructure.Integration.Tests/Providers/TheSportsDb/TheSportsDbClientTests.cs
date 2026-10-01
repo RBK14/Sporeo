@@ -2,107 +2,107 @@ using System.Net;
 using System.Text;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Infrastructure.Integration.Providers.TheSportsDb;
+using Errors = Sporeo.Fixtures.Application.Common.Errors;
 
 namespace Sporeo.Fixtures.Infrastructure.Integration.Tests.Providers.TheSportsDb;
 
 public sealed class TheSportsDbClientTests
 {
     [Fact]
-    public async Task FetchFixturesAsync_WithEmptyEvents_ShouldReturnEmptySuccess()
+    public async Task FetchShortTermFixturesAsync_WithEmptyEvents_ShouldReturnEmptySuccess()
     {
         using var httpClient = CreateClient("""{"events":null}""", HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", null, SyncMode.ShortTerm);
+        var result = await sut.FetchShortTermFixturesAsync("4328", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WithEmptyEventsArray_ShouldReturnEmptySuccess()
+    public async Task FetchLongTermFixturesAsync_WithEmptyEventsArray_ShouldReturnEmptySuccess()
     {
         using var httpClient = CreateClient("""{"events":[]}""", HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WithUnauthorized_ShouldReturnTypedFailure()
+    public async Task FetchShortTermFixturesAsync_WithUnauthorized_ShouldReturnTypedFailure()
     {
         using var httpClient = CreateClient("unauthorized", HttpStatusCode.Unauthorized);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", null, SyncMode.ShortTerm);
+        var result = await sut.FetchShortTermFixturesAsync("4328", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.Unauthorized");
+        result.Error.Should().Be(Errors.ExternalFixtures.Unauthorized);
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WithTooManyRequests_ShouldReturnRateLimitedFailure()
+    public async Task FetchShortTermFixturesAsync_WithTooManyRequests_ShouldReturnRateLimitedFailure()
     {
         using var httpClient = CreateClient("rate limited", HttpStatusCode.TooManyRequests);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", null, SyncMode.ShortTerm);
+        var result = await sut.FetchShortTermFixturesAsync("4328", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.RateLimited");
+        result.Error.Should().Be(Errors.ExternalFixtures.RateLimited);
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WithInvalidJson_ShouldReturnInvalidPayloadFailure()
+    public async Task FetchLongTermFixturesAsync_WithInvalidJson_ShouldReturnInvalidPayloadFailure()
     {
         using var httpClient = CreateClient("not-json", HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.InvalidPayload");
+        result.Error.Should().Be(Errors.ExternalFixtures.InvalidPayload);
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WhenHttpRequestException_ShouldReturnTransientFailure()
+    public async Task FetchLongTermFixturesAsync_WhenHttpRequestException_ShouldReturnTransientFailure()
     {
         using var httpClient = new HttpClient(new ThrowingHandler())
         {
             BaseAddress = new Uri("https://example.test/")
         };
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.Transient");
+        result.Error.Should().Be(Errors.ExternalFixtures.Transient);
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WhenCanceled_ShouldPropagateCancellation()
+    public async Task FetchShortTermFixturesAsync_WhenCanceled_ShouldPropagateCancellation()
     {
         using var httpClient = new HttpClient(new DelayedHandler())
         {
             BaseAddress = new Uri("https://example.test/")
         };
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        var act = async () => await sut.FetchFixturesAsync("4328", null, SyncMode.ShortTerm, cts.Token);
+        var act = async () => await sut.FetchShortTermFixturesAsync("4328", cts.Token);
 
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WithValidStrTimestamp_ShouldPreferTimestampOverStrTime()
+    public async Task FetchLongTermFixturesAsync_WithValidStrTimestamp_ShouldPreferTimestampOverStrTime()
     {
         var payload = BuildEventsJson(BuildEvent(
             idEvent: "1",
@@ -111,9 +111,9 @@ public sealed class TheSportsDbClientTests
             strTimestamp: "2026-03-15T18:30:00+00:00"));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle();
@@ -124,14 +124,14 @@ public sealed class TheSportsDbClientTests
     [InlineData("2026-03-15T18:30:00Z")]
     [InlineData("2026-03-15T18:30:00")]
     [InlineData("2026-03-15 18:30:00")]
-    public async Task FetchFixturesAsync_WithSupportedTimestampFormats_ShouldParseAsUtc(string strTimestamp)
+    public async Task FetchLongTermFixturesAsync_WithSupportedTimestampFormats_ShouldParseAsUtc(string strTimestamp)
     {
         var payload = BuildEventsJson(BuildEvent(strTimestamp: strTimestamp, strTime: null));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle();
@@ -140,14 +140,14 @@ public sealed class TheSportsDbClientTests
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WhenStrTimestampMissing_ShouldFallbackToDateEventAndStrTime()
+    public async Task FetchLongTermFixturesAsync_WhenStrTimestampMissing_ShouldFallbackToDateEventAndStrTime()
     {
         var payload = BuildEventsJson(BuildEvent(strTimestamp: null, dateEvent: "2026-03-15", strTime: "18:30:00"));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle();
@@ -155,7 +155,7 @@ public sealed class TheSportsDbClientTests
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WhenStrTimestampInvalid_ShouldFallbackToDateEventAndStrTime()
+    public async Task FetchLongTermFixturesAsync_WhenStrTimestampInvalid_ShouldFallbackToDateEventAndStrTime()
     {
         var payload = BuildEventsJson(BuildEvent(
             strTimestamp: "not-a-date",
@@ -163,9 +163,9 @@ public sealed class TheSportsDbClientTests
             strTime: "18:30:00"));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle();
@@ -173,7 +173,7 @@ public sealed class TheSportsDbClientTests
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WhenTimestampAndFallbackInvalid_ShouldReturnInvalidPayload()
+    public async Task FetchLongTermFixturesAsync_WhenTimestampAndFallbackInvalid_ShouldReturnInvalidPayload()
     {
         var payload = BuildEventsJson(BuildEvent(
             strTimestamp: "bad",
@@ -181,49 +181,49 @@ public sealed class TheSportsDbClientTests
             strTime: "bad"));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.InvalidPayload");
+        result.Error.Should().Be(Errors.ExternalFixtures.InvalidPayload);
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WhenAllEventsInvalid_ShouldReturnInvalidPayloadFailure()
+    public async Task FetchLongTermFixturesAsync_WhenAllEventsInvalid_ShouldReturnInvalidPayloadFailure()
     {
         var payload = BuildEventsJson(
             BuildEvent(idEvent: null, strTimestamp: "2026-03-15T18:30:00Z"),
             BuildEvent(idEvent: "2", strTimestamp: "bad", dateEvent: "bad", strTime: "bad"));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error.Code.Should().Be("ExternalFixtures.InvalidPayload");
+        result.Error.Should().Be(Errors.ExternalFixtures.InvalidPayload);
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WhenMixedValidAndInvalidEvents_ShouldReturnValidOnly()
+    public async Task FetchLongTermFixturesAsync_WhenMixedValidAndInvalidEvents_ShouldReturnValidOnly()
     {
         var payload = BuildEventsJson(
             BuildEvent(idEvent: "1", strTimestamp: "2026-03-15T18:30:00Z"),
             BuildEvent(idEvent: null, strTimestamp: "2026-03-16T18:30:00Z"));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().ContainSingle();
-        result.Value[0].ProviderId.Should().Be("1");
+        result.Value[0].ExternalId.Should().Be("1");
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WithVenueAndStrCountry_ShouldMapCountryToVenueDto()
+    public async Task FetchLongTermFixturesAsync_WithVenueAndStrCountry_ShouldMapCountryToVenueDto()
     {
         var payload = BuildEventsJson(BuildEvent(
             idVenue: "v1",
@@ -231,9 +231,9 @@ public sealed class TheSportsDbClientTests
             strCountry: "England"));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         var venue = result.Value[0].Venue;
@@ -244,38 +244,48 @@ public sealed class TheSportsDbClientTests
     }
 
     [Fact]
-    public async Task FetchFixturesAsync_WithStrCountryOnlyAndNoVenueIds_ShouldReturnFixtureWithoutVenue()
+    public async Task FetchLongTermFixturesAsync_WithStrCountryOnlyAndNoVenue_ShouldReturnFixtureWithoutVenue()
     {
         var payload = BuildEventsJson(BuildEvent(strCountry: "England"));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value[0].Venue.Should().BeNull();
     }
 
     [Theory]
-    [InlineData("Match Finished", FixtureStatus.Finished)]
-    [InlineData("Not Started", FixtureStatus.Scheduled)]
-    [InlineData("Postponed", FixtureStatus.Postponed)]
-    [InlineData("Cancelled", FixtureStatus.Cancelled)]
+    [InlineData("FT", FixtureStatus.Finished)]
+    [InlineData("AET", FixtureStatus.Finished)]
+    [InlineData("PEN", FixtureStatus.Finished)]
+    [InlineData("NS", FixtureStatus.Scheduled)]
+    [InlineData("PST", FixtureStatus.Postponed)]
+    [InlineData("POST", FixtureStatus.Postponed)]
+    [InlineData("CANC", FixtureStatus.Cancelled)]
+    [InlineData("ABD", FixtureStatus.Cancelled)]
     [InlineData("Half Time", FixtureStatus.Scheduled)]
     [InlineData(null, FixtureStatus.Scheduled)]
-    public async Task FetchFixturesAsync_WithStatus_ShouldMapCorrectly(string? strStatus, FixtureStatus expected)
+    public async Task FetchLongTermFixturesAsync_WithStatus_ShouldMapCorrectly(string? strStatus, FixtureStatus expected)
     {
         var payload = BuildEventsJson(BuildEvent(strStatus: strStatus));
 
         using var httpClient = CreateClient(payload, HttpStatusCode.OK);
-        var sut = new TheSportsDbClient(httpClient, NullLogger<TheSportsDbClient>.Instance);
+        var sut = CreateSut(httpClient);
 
-        var result = await sut.FetchFixturesAsync("4328", "2025-2026", SyncMode.LongTerm);
+        var result = await sut.FetchLongTermFixturesAsync("4328", "2025-2026", CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value[0].Status.Should().Be(expected);
     }
+
+    private static TheSportsDbClient CreateSut(HttpClient httpClient) =>
+        new(
+            new TheSportsDbApi(httpClient, NullLogger<TheSportsDbApi>.Instance),
+            new TheSportsDbFixtureMapper(NullLogger<TheSportsDbFixtureMapper>.Instance),
+            NullLogger<TheSportsDbClient>.Instance);
 
     private static string BuildEventsJson(params string[] events) =>
         $$"""{"events":[{{string.Join(",", events)}}]}""";

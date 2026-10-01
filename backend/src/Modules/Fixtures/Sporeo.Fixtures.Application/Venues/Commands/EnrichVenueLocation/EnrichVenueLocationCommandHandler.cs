@@ -1,7 +1,8 @@
 using Sporeo.BuildingBlocks.Application.Abstractions.Execution;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Venues.Abstractions;
+using Sporeo.Fixtures.Application.Venues.Data;
+using Sporeo.Fixtures.Domain.Common;
 
 namespace Sporeo.Fixtures.Application.Venues.Commands.EnrichVenueLocation;
 
@@ -13,7 +14,10 @@ internal sealed class EnrichVenueLocationCommandHandler(
     {
         var venue = await venueRepository.GetByIdAsync(request.VenueId, cancellationToken);
 
-        if (venue is null || venue.Coordinates is not null)
+        if (venue is null)
+            return Result.Failure(Errors.Venue.NotFound(request.VenueId));
+
+        if (venue.Coordinates is not null)
             return Result.Success();
 
         var locationResult = await geocodingService.GetVenueLocationAsync(

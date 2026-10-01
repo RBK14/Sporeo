@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
+using Sporeo.Fixtures.Application.Venues.Abstractions;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
 using System.Globalization;
@@ -70,7 +70,7 @@ internal sealed class NominatimGeocodingService(
 
         try
         {
-            await rateLimiter.WaitAsync(cancellationToken);
+            await using var lease = await rateLimiter.AcquireAsync(cancellationToken);
 
             using var response = await httpClient.GetAsync(
                 requestUri,
@@ -147,7 +147,7 @@ internal sealed class NominatimGeocodingService(
     /// Primitive cache payload for Redis JSON serialization.
     /// Domain value objects (<see cref="Coordinates"/>, <see cref="Address"/>) are not System.Text.Json-friendly.
     /// </summary>
-    private sealed record GeocodingCacheEntry(
+    internal sealed record GeocodingCacheEntry(
         bool IsFound,
         double? Latitude,
         double? Longitude,

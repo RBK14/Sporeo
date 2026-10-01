@@ -41,7 +41,10 @@ public class ValidationBehavior<TRequest, TResponse>(
         var errors = failures
             .Select(f => new Error(
                 string.IsNullOrWhiteSpace(f.ErrorCode) ? f.PropertyName : f.ErrorCode,
-                f.ErrorMessage))
+                f.ErrorMessage)
+            {
+                PropertyName = string.IsNullOrWhiteSpace(f.PropertyName) ? null : f.PropertyName
+            })
             .ToArray();
 
         var validationError = new ValidationError(errors);

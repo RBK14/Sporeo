@@ -20,7 +20,7 @@ public sealed class SensitiveDataRedactionTests
     }
 
     [Fact]
-    public async Task TheSportsDbApiKeyHandler_InsertsKeyIntoRelativePath()
+    public async Task TheSportsDbApiKeyHandler_ReplacesApiKeyPlaceholderInPath()
     {
         HttpRequestMessage? captured = null;
         var inner = new CaptureHandler(request =>
@@ -41,14 +41,16 @@ public sealed class SensitiveDataRedactionTests
 
         using var client = new HttpClient(handler)
         {
-            BaseAddress = new Uri("https://www.thesportsdb.com/api/v1/json/")
+            BaseAddress = new Uri("https://www.thesportsdb.com/api/v1/json/[API_KEY]/")
         };
 
         await client.GetAsync("eventspastleague.php?id=4328");
 
         captured.Should().NotBeNull();
         captured!.RequestUri!.ToString().Should().Contain("super-secret-key/");
-        client.BaseAddress!.AbsoluteUri.Should().NotContain("super-secret-key");
+        captured.RequestUri.ToString().Should().NotContain("[API_KEY]");
+        client.BaseAddress!.AbsoluteUri.Should().Contain("[API_KEY]");
+        client.BaseAddress.AbsoluteUri.Should().NotContain("super-secret-key");
     }
 
     private sealed class CaptureHandler(Func<HttpRequestMessage, HttpResponseMessage> factory) : HttpMessageHandler

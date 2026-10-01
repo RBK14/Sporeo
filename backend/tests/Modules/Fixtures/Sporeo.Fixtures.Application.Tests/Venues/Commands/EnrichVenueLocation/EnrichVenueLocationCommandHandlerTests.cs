@@ -1,8 +1,8 @@
 using FluentAssertions;
 using NSubstitute;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Geocoding;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Venues.Abstractions;
+using Sporeo.Fixtures.Application.Venues.Data;
 using Sporeo.Fixtures.Application.Venues.Commands.EnrichVenueLocation;
 using Sporeo.Fixtures.Domain.Venues;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;

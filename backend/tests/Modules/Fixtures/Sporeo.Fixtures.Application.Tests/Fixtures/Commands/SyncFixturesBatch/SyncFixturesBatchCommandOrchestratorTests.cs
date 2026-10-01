@@ -4,15 +4,16 @@ using Microsoft.Extensions.Logging.Abstractions;
 using MediatR;
 using NSubstitute;
 using Sporeo.BuildingBlocks.Domain.Results;
-using Sporeo.Fixtures.Application.Abstractions.Persistence;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Providers;
+using Sporeo.Fixtures.Application.Fixtures.Abstractions;
 using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatchChunk;
+using Sporeo.Fixtures.Application.Leagues.Data;
 using Sporeo.Fixtures.Application.Seasons.Commands.EnsureSeasonsForSync;
 using Sporeo.Fixtures.Domain.Fixtures.Enums;
 using Sporeo.Fixtures.Domain.Leagues;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
+using Sporeo.Fixtures.Application.Abstractions;
 
 namespace Sporeo.Fixtures.Application.Tests.Fixtures.Commands;
 
@@ -136,7 +137,7 @@ public sealed class SyncFixturesBatchCommandOrchestratorTests
     }
 
     [Fact]
-    public async Task Handle_WhenInfrastructureFailure_ShouldPropagate()
+    public async Task Handle_WhenInfrastructureFailure_ShouldMarkChunkAsFailedAndContinue()
     {
         var fixtures = new List<ExternalFixtureDto>
         {
@@ -153,11 +154,13 @@ public sealed class SyncFixturesBatchCommandOrchestratorTests
 
         var handler = CreateHandler(sender);
 
-        var act = async () => await handler.Handle(
+        var result = await handler.Handle(
             new SyncFixturesBatchCommand("TheSportsDB", "ext-league-1", fixtures),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("db down");
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Failed.Should().Be(1);
+        result.Value.HasWarnings.Should().BeTrue();
     }
 
     [Fact]
@@ -176,8 +179,11 @@ public sealed class SyncFixturesBatchCommandOrchestratorTests
 
         var handler = new SyncFixturesBatchCommandHandler(
             leagueRepository,
+            new SyncChunkIsolationExecutor(
+                CreateScopeFactory(sender),
+                Substitute.For<IDatabaseExceptionClassifier>(),
+                NullLogger<SyncChunkIsolationExecutor>.Instance),
             CreateScopeFactory(sender),
-            Substitute.For<IDatabaseExceptionClassifier>(),
             NullLogger<SyncFixturesBatchCommandHandler>.Instance);
 
         var result = await handler.Handle(
@@ -213,8 +219,11 @@ public sealed class SyncFixturesBatchCommandOrchestratorTests
 
         return new SyncFixturesBatchCommandHandler(
             leagueRepository,
+            new SyncChunkIsolationExecutor(
+                CreateScopeFactory(sender),
+                classifier,
+                NullLogger<SyncChunkIsolationExecutor>.Instance),
             CreateScopeFactory(sender),
-            classifier,
             NullLogger<SyncFixturesBatchCommandHandler>.Instance);
     }
 

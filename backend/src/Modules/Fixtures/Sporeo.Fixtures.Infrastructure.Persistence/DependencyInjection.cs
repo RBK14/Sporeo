@@ -5,19 +5,16 @@ using Microsoft.Extensions.Logging;
 using Sporeo.BuildingBlocks.Application.Abstractions.Caching;
 using Sporeo.BuildingBlocks.Application.Abstractions.Data;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Abstractions;
+using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Configuration;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Persistence;
 using Sporeo.BuildingBlocks.Infrastructure.Messaging.Outbox.Serialization;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence.Dapper;
 using Sporeo.BuildingBlocks.Infrastructure.Persistence.Interceptors;
-using Sporeo.Fixtures.Application.Abstractions.Persistence;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.ReadStores;
-using Sporeo.Fixtures.Application.Fixtures.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.ReadStores;
-using Sporeo.Fixtures.Application.Leagues.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Seasons.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Sports.Abstractions.Repositories;
-using Sporeo.Fixtures.Application.Venues.Abstractions.ReadStores;
-using Sporeo.Fixtures.Application.Venues.Abstractions.Repositories;
+using Sporeo.Fixtures.Application.Fixtures.Data;
+using Sporeo.Fixtures.Application.Leagues.Data;
+using Sporeo.Fixtures.Application.Seasons.Data;
+using Sporeo.Fixtures.Application.Sports.Data;
+using Sporeo.Fixtures.Application.Venues.Data;
 using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
 using Sporeo.Fixtures.Domain.Leagues.Events;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
@@ -26,15 +23,15 @@ using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 using Sporeo.Fixtures.Domain.Venues.Events;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Persistence.Caching;
-using Sporeo.Fixtures.Infrastructure.Persistence.Connections;
-using Sporeo.Fixtures.Infrastructure.Persistence.Context;
-using Sporeo.Fixtures.Infrastructure.Persistence.Exceptions;
-using Sporeo.Fixtures.Infrastructure.Persistence.Interceptors;
-using Sporeo.Fixtures.Infrastructure.Persistence.Logging;
+using Sporeo.Fixtures.Infrastructure.Persistence.Reading;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing.Exceptions;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing.Interceptors;
 using Sporeo.Fixtures.Infrastructure.Persistence.Outbox;
-using Sporeo.Fixtures.Infrastructure.Persistence.ReadStores;
-using Sporeo.Fixtures.Infrastructure.Persistence.Repositories;
+using Sporeo.Fixtures.Infrastructure.Persistence.Reading.ReadStores;
+using Sporeo.Fixtures.Infrastructure.Persistence.Writing.Repositories;
 using Sporeo.Fixtures.Infrastructure.Persistence.Seeding;
+using Sporeo.Fixtures.Application.Abstractions;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence;
 
@@ -87,6 +84,10 @@ public static class DependencyInjection
     {
         services.AddFixturesDatabase(configuration);
         services.AddSingleton<IDatabaseExceptionClassifier, SqlServerDatabaseExceptionClassifier>();
+        services.AddOptions<OutboxOptions>()
+            .Bind(configuration.GetSection(OutboxOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
         services.AddScoped<IOutboxStore, EfOutboxStore<FixturesDbContext>>();
         services.AddRepositories();
 
@@ -99,11 +100,14 @@ public static class DependencyInjection
     /// <param name="services">The service collection to configure.</param>
     /// <param name="configuration">The application configuration containing the <c>redis</c> connection string.</param>
     /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
-    /// <exception cref="InvalidOperationException">Thrown when the <c>redis</c> connection string is missing.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the <c>redis</c> connection string is missing or blank.</exception>
     public static IServiceCollection AddCaching(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("redis")
-            ?? throw new InvalidOperationException("Connection string 'redis' was not found.");
+        var connectionString = configuration.GetConnectionString("redis");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'redis' was not found.");
+        }
 
         services.AddStackExchangeRedisCache(options =>
         {
@@ -118,8 +122,11 @@ public static class DependencyInjection
 
     private static IServiceCollection AddSqlServer(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("fixtures-db")
-            ?? throw new InvalidOperationException("Connection string 'fixtures-db' was not found.");
+        var connectionString = configuration.GetConnectionString("fixtures-db");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            throw new InvalidOperationException("Connection string 'fixtures-db' was not found.");
+        }
 
         services.AddSingleton<ISqlConnectionFactory>(_ => new SqlConnectionFactory(connectionString));
 
@@ -129,16 +136,7 @@ public static class DependencyInjection
                 sp.GetRequiredService<AuditableEntityInterceptor>(),
                 sp.GetRequiredService<VenueLocationInterceptor>());
 
-            options.UseSqlServer(connectionString, sqlOptions =>
-            {
-                sqlOptions.UseNetTopologySuite();
-                sqlOptions.MigrationsHistoryTable("__EFMigrationsHistory");
-
-                sqlOptions.EnableRetryOnFailure(
-                    maxRetryCount: 3,
-                    maxRetryDelay: TimeSpan.FromSeconds(5),
-                    errorNumbersToAdd: null);
-            });
+            options.ConfigureFixturesSqlServer(connectionString);
         });
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<FixturesDbContext>());
@@ -156,6 +154,7 @@ public static class DependencyInjection
         services.AddScoped<IFixtureReadStore, FixtureReadStore>();
         services.AddScoped<IVenueReadStore, VenueReadStore>();
         services.AddScoped<ILeagueReadStore, LeagueReadStore>();
+        services.AddScoped<ISportReadStore, SportReadStore>();
 
         return services;
     }

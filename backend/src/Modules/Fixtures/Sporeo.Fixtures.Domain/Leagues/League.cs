@@ -88,13 +88,15 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
     /// <param name="country">The country in which the league operates, if known.</param>
     /// <param name="providerName">The name of the external data provider.</param>
     /// <param name="providerId">The identifier assigned by the external data provider.</param>
+    /// <param name="isMonitored">Whether the league should be actively monitored for synchronization. Defaults to <see langword="true"/>.</param>
     /// <returns>A successful result containing the new league, or a failure when validation fails.</returns>
     public static Result<League> CreateFromProvider(
         SportId sportId,
         string name,
         string? country,
         string providerName,
-        string providerId)
+        string providerId,
+        bool isMonitored = true)
     {
         var nameValidation = ValidateName(name);
         if (nameValidation.IsFailure)
@@ -111,10 +113,11 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
             country,
             providerName,
             providerId,
-            true,
+            isMonitored,
             false);
 
-        league.AddDomainEvent(new LeagueMonitoringEnabledDomainEvent(league.Id));
+        if (isMonitored)
+            league.AddDomainEvent(new LeagueMonitoringEnabledDomainEvent(league.Id));
         
         return league;
     }
@@ -213,6 +216,19 @@ public sealed class League : AggregateRoot<LeagueId>, IAuditable, IDeletable
             AddDomainEvent(new LeagueMonitoringEnabledDomainEvent(Id));
         }
 
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Unlocks the league for external synchronization, allowing future updates from providers to be applied.
+    /// </summary>
+    /// <returns>A successful result when the league is unlocked; otherwise, a failure when the league cannot be modified.</returns>
+    public Result UnlockForSync()
+    {
+        var guard = EnsureModifiable();
+        if (guard.IsFailure) return guard;
+
+        IsManuallyEdited = false;
         return Result.Success();
     }
 

@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Sporeo.BuildingBlocks.Application.Behaviors;
+using Sporeo.Fixtures.Application.Fixtures.Commands.SyncFixturesBatch;
 
 namespace Sporeo.Fixtures.Application;
 
@@ -22,13 +23,16 @@ public static class DependencyInjection
             configuration.AddOpenBehavior(typeof(LoggingBehavior<,>));
             configuration.AddOpenBehavior(typeof(ValidationBehavior<,>));
             configuration.AddOpenBehavior(typeof(PerformanceBehavior<,>));
-            configuration.AddOpenBehavior(typeof(QueryCachingBehavior<,>));
+            // QueryCachingBehavior is kept in BuildingBlocks but disabled until a query implements ICachedQuery.
+            // configuration.AddOpenBehavior(typeof(QueryCachingBehavior<,>));
             configuration.AddOpenBehavior(typeof(CommitBehavior<,>));
         });
 
         services.AddValidatorsFromAssembly(
             typeof(DependencyInjection).Assembly,
             includeInternalTypes: true);
+
+        services.AddTransient<SyncChunkIsolationExecutor>();
 
         return services;
     }
