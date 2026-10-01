@@ -43,6 +43,6 @@ public sealed class SportAdminEndpoints : IEndpoint
 
         var response = new CreateSportResponse(result.Value.Value);
 
-        return Results.Created($"api/v1/admin/sports/{result.Value.Value}", response);
+        return Results.Created($"/api/v1/admin/sports/{result.Value.Value}", response);
     }
 }

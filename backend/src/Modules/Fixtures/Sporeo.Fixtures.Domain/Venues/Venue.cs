@@ -209,6 +209,10 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
         if (guard.IsFailure)
             return guard;
 
+        var syncGuard = CheckRule(new ManuallyEditedVenueCannotBeSyncedRule(this));
+        if (syncGuard.IsFailure)
+            return syncGuard;
+
         UpdateCoreFields(Name, address, coordinates);
 
         return Result.Success();

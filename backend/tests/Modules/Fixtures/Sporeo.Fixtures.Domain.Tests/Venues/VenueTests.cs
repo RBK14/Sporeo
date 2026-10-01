@@ -127,6 +127,19 @@ public class VenueTests
         venue.UpdateManually("Updated").Error.Should().Be(Errors.Venue.Deleted);
     }
 
+    [Fact]
+    public void UnlockForSync_ShouldAllowExternalSyncAgain()
+    {
+        var venue = CreateManualVenue();
+        venue.IsManuallyEdited.Should().BeTrue();
+
+        var unlock = venue.UnlockForSync();
+
+        unlock.IsSuccess.Should().BeTrue();
+        venue.IsManuallyEdited.Should().BeFalse();
+        venue.SyncExternalData("Provider Update").IsSuccess.Should().BeTrue();
+    }
+
     private static VenueAggregate CreateManualVenue()
     {
         return VenueAggregate.CreateManually("Stadium Arena", ValidAddress, ValidCoordinates).Value;

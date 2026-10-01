@@ -23,6 +23,7 @@ public sealed class SeasonAdminEndpoints : IEndpoint
             .Produces<CreateSeasonResponse>(StatusCodes.Status201Created)
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
     }
 
@@ -43,6 +44,6 @@ public sealed class SeasonAdminEndpoints : IEndpoint
 
         var response = new CreateSeasonResponse(result.Value.Value);
 
-        return Results.Created($"api/v1/admin/seasons/{result.Value.Value}", response);
+        return Results.Created($"/api/v1/admin/seasons/{result.Value.Value}", response);
     }
 }

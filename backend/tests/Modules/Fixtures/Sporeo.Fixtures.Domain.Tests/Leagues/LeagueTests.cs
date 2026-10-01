@@ -127,6 +127,19 @@ public class LeagueTests
         league.UpdateManually("Updated", "England", SportId).Error.Should().Be(Errors.League.Deleted);
     }
 
+    [Fact]
+    public void UnlockForSync_ShouldAllowExternalSyncAgain()
+    {
+        var league = CreateManualLeague();
+        league.IsManuallyEdited.Should().BeTrue();
+
+        var unlock = league.UnlockForSync();
+
+        unlock.IsSuccess.Should().BeTrue();
+        league.IsManuallyEdited.Should().BeFalse();
+        league.SyncExternalData("Provider Update", "England", SportId).IsSuccess.Should().BeTrue();
+    }
+
     private static LeagueAggregate CreateManualLeague()
     {
         return LeagueAggregate.CreateManually(SportId, "Premier League", "England").Value;
