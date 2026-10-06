@@ -237,6 +237,50 @@ public class VenueTests
         venue.GeocodingStatus.Should().Be(GeocodingStatus.Pending);
     }
 
+    [Fact]
+    public void ApplyGeocodedLocation_OnManuallyEditedVenue_ShouldSetCoordinatesAndKeepAddress()
+    {
+        var venue = VenueAggregate.CreateManually("Stadium Arena", ValidAddress).Value;
+        var geocodedAddress = Address.Create("Other St 2", "Krakow", "Poland").Value;
+
+        var result = venue.ApplyGeocodedLocation(geocodedAddress, ValidCoordinates);
+
+        result.IsSuccess.Should().BeTrue();
+        venue.Coordinates.Should().Be(ValidCoordinates);
+        venue.Address.Should().Be(ValidAddress);
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Resolved);
+        venue.LastGeocodingAttemptOn.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void ApplyGeocodedLocation_OnProviderVenue_ShouldUseGeocodedAddress()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+        venue.MarkGeocodingFailed(GeocodingStatus.Failed, "Geocoding.HttpError");
+        var geocodedAddress = Address.Create("Other St 2", "Krakow", "Poland").Value;
+
+        var result = venue.ApplyGeocodedLocation(geocodedAddress, ValidCoordinates);
+
+        result.IsSuccess.Should().BeTrue();
+        venue.Coordinates.Should().Be(ValidCoordinates);
+        venue.Address.Should().Be(geocodedAddress);
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Resolved);
+        venue.GeocodingErrorCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void ApplyGeocodedLocation_OnDeletedVenue_ShouldFail()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+        venue.Delete();
+
+        var result = venue.ApplyGeocodedLocation(null, ValidCoordinates);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(Errors.Venue.Deleted);
+        venue.Coordinates.Should().BeNull();
+    }
+
     private static VenueAggregate CreateManualVenue()
     {
         return VenueAggregate.CreateManually("Stadium Arena", ValidAddress, ValidCoordinates).Value;

@@ -47,9 +47,7 @@ internal sealed class EnrichVenueLocationCommandHandler(
         }
 
         var locationData = locationResult.Value;
-        var addressToUpdate = locationData.Address ?? venue.Address;
-        var updateResult = venue.UpdateLocation(addressToUpdate, locationData.Coordinates);
 
-        return updateResult.IsFailure ? updateResult : Result.Success();
+        return venue.ApplyGeocodedLocation(locationData.Address, locationData.Coordinates);
     }
 }

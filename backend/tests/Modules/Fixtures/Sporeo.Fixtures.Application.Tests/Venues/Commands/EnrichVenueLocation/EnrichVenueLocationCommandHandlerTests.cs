@@ -58,6 +58,23 @@ public sealed class EnrichVenueLocationCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ForManuallyCreatedVenue_ShouldResolveLocationAndKeepAddress()
+    {
+        var address = Address.Create("Main St 1", "Warsaw", "Poland").Value;
+        var venue = Venue.CreateManually("National Stadium", address).Value;
+        var coordinates = Coordinates.Create(52.2, 21.0).Value;
+        var geocodedAddress = Address.Create("Other St 2", "Warsaw", "Poland").Value;
+        var handler = CreateHandler(venue, Result.Success(new GeocodedLocation(coordinates, geocodedAddress)));
+
+        var result = await handler.Handle(new EnrichVenueLocationCommand(venue.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        venue.Coordinates.Should().Be(coordinates);
+        venue.Address.Should().Be(address);
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Resolved);
+    }
+
+    [Fact]
     public async Task Handle_WhenCoordinatesAlreadyPresent_ShouldSucceedWithoutGeocoding()
     {
         var coordinates = Coordinates.Create(52.2, 21.0).Value;

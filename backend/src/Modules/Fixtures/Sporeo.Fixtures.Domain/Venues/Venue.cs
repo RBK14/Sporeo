@@ -216,22 +216,22 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
     }
 
     /// <summary>
-    /// Updates venue address and coordinates without changing the display name.
+    /// Applies a location resolved by geocoding. Manually edited venues receive the coordinates
+    /// but keep their manually entered address.
     /// </summary>
-    /// <param name="address">The postal address to apply, if any.</param>
-    /// <param name="coordinates">The geographic coordinates to apply, if any.</param>
-    /// <returns>A successful result when the venue can be modified; otherwise a failure.</returns>
-    public Result UpdateLocation(Address? address, Coordinates? coordinates)
+    /// <param name="geocodedAddress">The address returned by the geocoding service, if any.</param>
+    /// <param name="coordinates">The geographic coordinates resolved by the geocoding service.</param>
+    /// <returns>A successful result when the location is applied; otherwise, a failure when the venue is deleted.</returns>
+    public Result ApplyGeocodedLocation(Address? geocodedAddress, Coordinates coordinates)
     {
         var guard = EnsureModifiable();
         if (guard.IsFailure)
             return guard;
 
-        var syncGuard = CheckRule(new ManuallyEditedVenueCannotBeSyncedRule(this));
-        if (syncGuard.IsFailure)
-            return syncGuard;
+        if (!IsManuallyEdited)
+            Address = geocodedAddress ?? Address;
 
-        UpdateCoreFields(Name, address, coordinates);
+        ApplyCoordinates(coordinates);
         LastGeocodingAttemptOn = SystemTimeProvider.Now;
 
         return Result.Success();
