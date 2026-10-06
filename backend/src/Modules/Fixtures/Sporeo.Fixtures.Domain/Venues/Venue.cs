@@ -1,6 +1,8 @@
 ﻿using Sporeo.BuildingBlocks.Domain.Models;
 using Sporeo.BuildingBlocks.Domain.Results;
+using Sporeo.BuildingBlocks.Domain.Time;
 using Sporeo.Fixtures.Domain.Common;
+using Sporeo.Fixtures.Domain.Venues.Enums;
 using Sporeo.Fixtures.Domain.Venues.Events;
 using Sporeo.Fixtures.Domain.Venues.Rules;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
@@ -42,6 +44,21 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
     /// </summary>
     public bool IsManuallyEdited { get; private set; }
 
+    /// <summary>
+    /// Gets the outcome of resolving geographic coordinates for the venue.
+    /// </summary>
+    public GeocodingStatus GeocodingStatus { get; private set; }
+
+    /// <summary>
+    /// Gets the error code reported by the last failed geocoding attempt, if any.
+    /// </summary>
+    public string? GeocodingErrorCode { get; private set; }
+
+    /// <summary>
+    /// Gets the date and time of the last geocoding attempt, if any.
+    /// </summary>
+    public DateTimeOffset? LastGeocodingAttemptOn { get; private set; }
+
     /// <inheritdoc />
     public DateTimeOffset CreatedOn { get; private set; }
 
@@ -66,6 +83,7 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
         Name = name;
         Address = address;
         Coordinates = coordinates;
+        GeocodingStatus = ResolveGeocodingStatus(coordinates);
         ExternalProviderName = externalProviderName;
         ExternalProviderId = externalProviderId;
         IsManuallyEdited = isManuallyEdited;
@@ -198,22 +216,45 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
     }
 
     /// <summary>
-    /// Updates venue address and coordinates without changing the display name.
+    /// Applies a location resolved by geocoding. Manually edited venues receive the coordinates
+    /// but keep their manually entered address.
     /// </summary>
-    /// <param name="address">The postal address to apply, if any.</param>
-    /// <param name="coordinates">The geographic coordinates to apply, if any.</param>
-    /// <returns>A successful result when the venue can be modified; otherwise a failure.</returns>
-    public Result UpdateLocation(Address? address, Coordinates? coordinates)
+    /// <param name="geocodedAddress">The address returned by the geocoding service, if any.</param>
+    /// <param name="coordinates">The geographic coordinates resolved by the geocoding service.</param>
+    /// <returns>A successful result when the location is applied; otherwise, a failure when the venue is deleted.</returns>
+    public Result ApplyGeocodedLocation(Address? geocodedAddress, Coordinates coordinates)
     {
         var guard = EnsureModifiable();
         if (guard.IsFailure)
             return guard;
 
-        var syncGuard = CheckRule(new ManuallyEditedVenueCannotBeSyncedRule(this));
-        if (syncGuard.IsFailure)
-            return syncGuard;
+        if (!IsManuallyEdited)
+            Address = geocodedAddress ?? Address;
 
-        UpdateCoreFields(Name, address, coordinates);
+        ApplyCoordinates(coordinates);
+        LastGeocodingAttemptOn = SystemTimeProvider.Now;
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Records a failed geocoding attempt so administrators can review venues without coordinates.
+    /// </summary>
+    /// <param name="status">The failure outcome; must be <see cref="GeocodingStatus.NotFound"/> or <see cref="GeocodingStatus.Failed"/>.</param>
+    /// <param name="errorCode">The error code reported by the geocoding service.</param>
+    /// <returns>A successful result when the failure is recorded; otherwise, a failure when the venue is deleted or the status is not a failure outcome.</returns>
+    public Result MarkGeocodingFailed(GeocodingStatus status, string errorCode)
+    {
+        var guard = EnsureModifiable();
+        if (guard.IsFailure)
+            return guard;
+
+        if (status is not (GeocodingStatus.NotFound or GeocodingStatus.Failed))
+            return Result.Failure(Errors.Venue.InvalidGeocodingFailureStatus);
+
+        GeocodingStatus = status;
+        GeocodingErrorCode = errorCode;
+        LastGeocodingAttemptOn = SystemTimeProvider.Now;
 
         return Result.Success();
     }
@@ -275,8 +316,25 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
     {
         Name = name;
         Address = address;
-        Coordinates = coordinates;
+        ApplyCoordinates(coordinates);
     }
+
+    /// <summary>
+    /// Updates coordinates and the geocoding status. When the venue stays without coordinates,
+    /// the recorded geocoding outcome is preserved so routine synchronization does not erase it.
+    /// </summary>
+    private void ApplyCoordinates(Coordinates? coordinates)
+    {
+        if (coordinates is null && Coordinates is null)
+            return;
+
+        Coordinates = coordinates;
+        GeocodingStatus = ResolveGeocodingStatus(coordinates);
+        GeocodingErrorCode = null;
+    }
+
+    private static GeocodingStatus ResolveGeocodingStatus(Coordinates? coordinates) =>
+        coordinates is null ? GeocodingStatus.Pending : GeocodingStatus.Resolved;
 
 #pragma warning disable CS8618
     /// <summary>

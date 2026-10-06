@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NetTopologySuite.Geometries;
 using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
@@ -12,9 +13,11 @@ using Sporeo.Fixtures.Infrastructure.Persistence.Writing;
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(FixturesDbContext))]
-    partial class FixturesDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261001172501_AddLeagueActiveMonitoredSportIdIndex")]
+    partial class AddLeagueActiveMonitoredSportIdIndex
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -310,23 +313,11 @@ namespace Sporeo.Fixtures.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<string>("GeocodingErrorCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("GeocodingStatus")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsManuallyEdited")
                         .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LastGeocodingAttemptOn")
-                        .HasColumnType("datetimeoffset");
 
                     b.Property<Point>("Location")
                         .HasColumnType("geography");

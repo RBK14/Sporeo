@@ -122,6 +122,8 @@ public sealed class FixtureQueriesSqlServerTests
         full.IsSuccess.Should().BeTrue();
         full.Value.Venue.Should().NotBeNull();
         full.Value.Venue!.City.Should().Be("Warsaw");
+        full.Value.Venue.Latitude.Should().BeApproximately(52.2297, 0.0001);
+        full.Value.Venue.Longitude.Should().BeApproximately(21.0122, 0.0001);
         full.Value.Sport.Name.Should().Be("Football");
         full.Value.League.Should().NotBeNull();
         full.Value.Season.Should().NotBeNull();
@@ -135,6 +137,12 @@ public sealed class FixtureQueriesSqlServerTests
         var withoutVenue = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureWithoutVenue.Id));
         withoutVenue.IsSuccess.Should().BeTrue();
         withoutVenue.Value.Venue.Should().BeNull();
+
+        var withoutCoordinates = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureNoLocation.Id));
+        withoutCoordinates.IsSuccess.Should().BeTrue();
+        withoutCoordinates.Value.Venue.Should().NotBeNull();
+        withoutCoordinates.Value.Venue!.Latitude.Should().BeNull();
+        withoutCoordinates.Value.Venue.Longitude.Should().BeNull();
 
         var softDeletedLeague = await sender.Send(new GetFixtureDetailsQuery(seed.FixtureSoftDeletedLeague.Id));
         softDeletedLeague.IsSuccess.Should().BeTrue();

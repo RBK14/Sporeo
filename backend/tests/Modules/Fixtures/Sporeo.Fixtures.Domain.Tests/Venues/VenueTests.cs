@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Sporeo.Fixtures.Domain.Common;
+using Sporeo.Fixtures.Domain.Venues.Enums;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using VenueAggregate = Sporeo.Fixtures.Domain.Venues.Venue;
 
@@ -138,6 +139,146 @@ public class VenueTests
         unlock.IsSuccess.Should().BeTrue();
         venue.IsManuallyEdited.Should().BeFalse();
         venue.SyncExternalData("Provider Update").IsSuccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Create_WithoutCoordinates_ShouldBePendingGeocoding()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Pending);
+        venue.LastGeocodingAttemptOn.Should().BeNull();
+    }
+
+    [Fact]
+    public void Create_WithCoordinates_ShouldBeResolved()
+    {
+        CreateProviderVenue().GeocodingStatus.Should().Be(GeocodingStatus.Resolved);
+        CreateManualVenue().GeocodingStatus.Should().Be(GeocodingStatus.Resolved);
+    }
+
+    [Theory]
+    [InlineData(GeocodingStatus.NotFound)]
+    [InlineData(GeocodingStatus.Failed)]
+    public void MarkGeocodingFailed_ShouldRecordFailure(GeocodingStatus status)
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+
+        var result = venue.MarkGeocodingFailed(status, "Geocoding.Error");
+
+        result.IsSuccess.Should().BeTrue();
+        venue.GeocodingStatus.Should().Be(status);
+        venue.GeocodingErrorCode.Should().Be("Geocoding.Error");
+        venue.LastGeocodingAttemptOn.Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineData(GeocodingStatus.Pending)]
+    [InlineData(GeocodingStatus.Resolved)]
+    public void MarkGeocodingFailed_WithNonFailureStatus_ShouldFail(GeocodingStatus status)
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+
+        var result = venue.MarkGeocodingFailed(status, "Geocoding.Error");
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(Errors.Venue.InvalidGeocodingFailureStatus);
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Pending);
+    }
+
+    [Fact]
+    public void MarkGeocodingFailed_OnDeletedVenue_ShouldFail()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+        venue.Delete();
+
+        var result = venue.MarkGeocodingFailed(GeocodingStatus.Failed, "Geocoding.Error");
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(Errors.Venue.Deleted);
+    }
+
+    [Fact]
+    public void UpdateManually_WithCoordinatesAfterFailure_ShouldResolveAndClearError()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+        venue.MarkGeocodingFailed(GeocodingStatus.NotFound, "Geocoding.NotFound");
+
+        venue.UpdateManually("Stadium Arena", ValidAddress, ValidCoordinates);
+
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Resolved);
+        venue.GeocodingErrorCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void SyncExternalData_WithoutCoordinatesAfterFailure_ShouldPreserveFailureStatus()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+        venue.MarkGeocodingFailed(GeocodingStatus.NotFound, "Geocoding.NotFound");
+        var lastAttempt = venue.LastGeocodingAttemptOn;
+
+        var result = venue.SyncExternalData("Stadium Arena Renamed", ValidAddress);
+
+        result.IsSuccess.Should().BeTrue();
+        venue.Name.Should().Be("Stadium Arena Renamed");
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.NotFound);
+        venue.GeocodingErrorCode.Should().Be("Geocoding.NotFound");
+        venue.LastGeocodingAttemptOn.Should().Be(lastAttempt);
+    }
+
+    [Fact]
+    public void UpdateManually_RemovingCoordinates_ShouldResetToPending()
+    {
+        var venue = CreateManualVenue();
+
+        venue.UpdateManually("Stadium Arena", ValidAddress, coordinates: null);
+
+        venue.Coordinates.Should().BeNull();
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Pending);
+    }
+
+    [Fact]
+    public void ApplyGeocodedLocation_OnManuallyEditedVenue_ShouldSetCoordinatesAndKeepAddress()
+    {
+        var venue = VenueAggregate.CreateManually("Stadium Arena", ValidAddress).Value;
+        var geocodedAddress = Address.Create("Other St 2", "Krakow", "Poland").Value;
+
+        var result = venue.ApplyGeocodedLocation(geocodedAddress, ValidCoordinates);
+
+        result.IsSuccess.Should().BeTrue();
+        venue.Coordinates.Should().Be(ValidCoordinates);
+        venue.Address.Should().Be(ValidAddress);
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Resolved);
+        venue.LastGeocodingAttemptOn.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void ApplyGeocodedLocation_OnProviderVenue_ShouldUseGeocodedAddress()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+        venue.MarkGeocodingFailed(GeocodingStatus.Failed, "Geocoding.HttpError");
+        var geocodedAddress = Address.Create("Other St 2", "Krakow", "Poland").Value;
+
+        var result = venue.ApplyGeocodedLocation(geocodedAddress, ValidCoordinates);
+
+        result.IsSuccess.Should().BeTrue();
+        venue.Coordinates.Should().Be(ValidCoordinates);
+        venue.Address.Should().Be(geocodedAddress);
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Resolved);
+        venue.GeocodingErrorCode.Should().BeNull();
+    }
+
+    [Fact]
+    public void ApplyGeocodedLocation_OnDeletedVenue_ShouldFail()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+        venue.Delete();
+
+        var result = venue.ApplyGeocodedLocation(null, ValidCoordinates);
+
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Be(Errors.Venue.Deleted);
+        venue.Coordinates.Should().BeNull();
     }
 
     private static VenueAggregate CreateManualVenue()

@@ -40,6 +40,7 @@ internal static class ResultExtensions
             var code when code == AppErrors.Catalog.InvalidRequest.Code
                 || code == AppErrors.Catalog.IdentityMismatch.Code
                 || code == AppErrors.Catalog.ItemNotFoundInCache.Code
+                || code == AppErrors.League.InvalidSportId.Code
                 || code == DomainErrors.Sport.EmptyName.Code
                 || code == DomainErrors.League.EmptyName.Code
                 || code == DomainErrors.Season.EmptyName.Code

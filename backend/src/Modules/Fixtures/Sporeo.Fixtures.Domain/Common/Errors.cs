@@ -96,6 +96,11 @@ public static class Errors
         public static readonly Error LockedForSync = new("Venue.LockedForSync", "Cannot synchronize a venue that has been manually edited.");
 
         /// <summary>
+        /// Returned when a geocoding failure is recorded with a status that is not a failure outcome.
+        /// </summary>
+        public static readonly Error InvalidGeocodingFailureStatus = new("Venue.InvalidGeocodingFailureStatus", "Geocoding failure status must be NotFound or Failed.");
+
+        /// <summary>
         /// Stable code for venue-not-found failures.
         /// </summary>
         public const string NotFoundCode = "Venue.NotFound";

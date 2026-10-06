@@ -56,8 +56,11 @@ internal class LeagueConfiguration : IEntityTypeConfiguration<League>
         builder.Property(x => x.IsMonitored)
             .IsRequired();
 
-        builder.HasIndex(x => x.IsMonitored)
-            .HasDatabaseName("IX_Leagues_ActiveMonitored")
+        // Conventional FK index retained explicitly so the filtered index below does not replace it.
+        builder.HasIndex(x => x.SportId)
+            .HasDatabaseName("IX_leagues_SportId");
+
+        builder.HasIndex(x => x.SportId, "IX_leagues_ActiveMonitored_SportId")
             .HasFilter("[IsMonitored] = 1 AND [IsDeleted] = 0");
 
         builder.Property(x => x.IsManuallyEdited)

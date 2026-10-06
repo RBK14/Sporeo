@@ -5,6 +5,7 @@ using Sporeo.BuildingBlocks.Domain.Results;
 using Sporeo.Fixtures.Application.Venues.Abstractions;
 using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 using Sporeo.Fixtures.Infrastructure.Integration.Configuration;
+using Errors = Sporeo.Fixtures.Application.Common.Errors;
 using System.Globalization;
 using System.Net;
 using System.Text;
@@ -29,11 +30,6 @@ internal sealed class NominatimGeocodingService(
         PropertyNameCaseInsensitive = true
     };
 
-    private static readonly Error HttpError = new("Geocoding.HttpError", "Failed to contact the geocoding API.");
-    private static readonly Error NotFound = new("Geocoding.NotFound", "Location not found.");
-    private static readonly Error RateLimited = new("Geocoding.RateLimited", "Geocoding rate limit was exceeded.");
-    private static readonly Error ParseError = new("Geocoding.ParseError", "Failed to parse geocoding API data.");
-
     private static readonly string[] WordsToRemove =
     [
         "The",
@@ -56,11 +52,11 @@ internal sealed class NominatimGeocodingService(
         if (cached is not null)
         {
             if (!cached.IsFound)
-                return Result.Failure<GeocodedLocation>(NotFound);
+                return Result.Failure<GeocodedLocation>(Errors.Geocoding.NotFound);
 
             var cachedLocation = TryMapCachedLocation(cached);
             if (cachedLocation is null)
-                return Result.Failure<GeocodedLocation>(ParseError);
+                return Result.Failure<GeocodedLocation>(Errors.Geocoding.ParseError);
 
             return Result.Success(cachedLocation);
         }
@@ -78,10 +74,10 @@ internal sealed class NominatimGeocodingService(
                 cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                return Result.Failure<GeocodedLocation>(RateLimited);
+                return Result.Failure<GeocodedLocation>(Errors.Geocoding.RateLimited);
 
             if (!response.IsSuccessStatusCode)
-                return Result.Failure<GeocodedLocation>(HttpError);
+                return Result.Failure<GeocodedLocation>(Errors.Geocoding.HttpError);
 
             await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             var results = await JsonSerializer.DeserializeAsync<NominatimResponse[]>(stream, JsonOptions, cancellationToken);
@@ -94,13 +90,13 @@ internal sealed class NominatimGeocodingService(
                     GeocodingCacheEntry.Miss(),
                     options.Value.MissCacheTtl,
                     cancellationToken);
-                return Result.Failure<GeocodedLocation>(NotFound);
+                return Result.Failure<GeocodedLocation>(Errors.Geocoding.NotFound);
             }
 
             if (!double.TryParse(location.Latitude, CultureInfo.InvariantCulture, out var latitude) ||
                 !double.TryParse(location.Longitude, CultureInfo.InvariantCulture, out var longitude))
             {
-                return Result.Failure<GeocodedLocation>(ParseError);
+                return Result.Failure<GeocodedLocation>(Errors.Geocoding.ParseError);
             }
 
             var coordinatesResult = Coordinates.Create(latitude, longitude);
