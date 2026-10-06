@@ -316,6 +316,18 @@ public sealed class Venue : AggregateRoot<VenueId>, IAuditable, IDeletable
     {
         Name = name;
         Address = address;
+        ApplyCoordinates(coordinates);
+    }
+
+    /// <summary>
+    /// Updates coordinates and the geocoding status. When the venue stays without coordinates,
+    /// the recorded geocoding outcome is preserved so routine synchronization does not erase it.
+    /// </summary>
+    private void ApplyCoordinates(Coordinates? coordinates)
+    {
+        if (coordinates is null && Coordinates is null)
+            return;
+
         Coordinates = coordinates;
         GeocodingStatus = ResolveGeocodingStatus(coordinates);
         GeocodingErrorCode = null;

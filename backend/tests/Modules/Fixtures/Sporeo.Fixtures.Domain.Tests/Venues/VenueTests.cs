@@ -210,6 +210,33 @@ public class VenueTests
         venue.GeocodingErrorCode.Should().BeNull();
     }
 
+    [Fact]
+    public void SyncExternalData_WithoutCoordinatesAfterFailure_ShouldPreserveFailureStatus()
+    {
+        var venue = VenueAggregate.CreateFromProvider("Stadium Arena", "ProviderA", "external-123", ValidAddress).Value;
+        venue.MarkGeocodingFailed(GeocodingStatus.NotFound, "Geocoding.NotFound");
+        var lastAttempt = venue.LastGeocodingAttemptOn;
+
+        var result = venue.SyncExternalData("Stadium Arena Renamed", ValidAddress);
+
+        result.IsSuccess.Should().BeTrue();
+        venue.Name.Should().Be("Stadium Arena Renamed");
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.NotFound);
+        venue.GeocodingErrorCode.Should().Be("Geocoding.NotFound");
+        venue.LastGeocodingAttemptOn.Should().Be(lastAttempt);
+    }
+
+    [Fact]
+    public void UpdateManually_RemovingCoordinates_ShouldResetToPending()
+    {
+        var venue = CreateManualVenue();
+
+        venue.UpdateManually("Stadium Arena", ValidAddress, coordinates: null);
+
+        venue.Coordinates.Should().BeNull();
+        venue.GeocodingStatus.Should().Be(GeocodingStatus.Pending);
+    }
+
     private static VenueAggregate CreateManualVenue()
     {
         return VenueAggregate.CreateManually("Stadium Arena", ValidAddress, ValidCoordinates).Value;
