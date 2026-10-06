@@ -18,6 +18,13 @@ public static class Errors
         public static readonly Error SportIdRequired = new(
             "League.SportIdRequired",
             "Sport id is required.");
+
+        /// <summary>
+        /// Returned when an optional sport filter is supplied as an empty identifier.
+        /// </summary>
+        public static readonly Error InvalidSportId = new(
+            "League.InvalidSportId",
+            "Sport id must not be empty.");
     }
 
     /// <summary>

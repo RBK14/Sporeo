@@ -1,6 +1,7 @@
-using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
-
+using Sporeo.Fixtures.Application.Leagues.Queries.GetActiveLeagues;
 using Sporeo.Fixtures.Application.Leagues.ReadModels;
+using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
+using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Leagues.Data;
 
@@ -45,4 +46,14 @@ public interface ILeagueReadStore
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>Provider identity when found; otherwise <see langword="null"/>.</returns>
     Task<LeagueExternalProviderDataReadModel?> GetLeagueExternalProviderDataAsync(LeagueId leagueId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets actively monitored leagues with sport and optional current season data.
+    /// </summary>
+    /// <param name="sportId">When set, only leagues for the specified sport are returned.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>Active leagues ordered by sport name, then league name.</returns>
+    Task<IReadOnlyList<ActiveLeagueReadModel>> GetActiveLeaguesAsync(
+        SportId? sportId = null,
+        CancellationToken cancellationToken = default);
 }

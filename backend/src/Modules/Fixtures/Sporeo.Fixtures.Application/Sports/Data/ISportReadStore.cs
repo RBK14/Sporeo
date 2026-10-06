@@ -1,3 +1,4 @@
+using Sporeo.Fixtures.Application.Sports.Queries.GetActiveSports;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Sports.Data;
@@ -20,5 +21,13 @@ public interface ISportReadStore
     Task<IReadOnlyDictionary<string, SportId>> GetSportStatusesAsync(
         string providerName,
         IEnumerable<string> sportProviderIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets sports that are not deleted and currently have at least one monitored league.
+    /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>Active sports ordered by name.</returns>
+    Task<IReadOnlyList<ActiveSportReadModel>> GetActiveSportsAsync(
         CancellationToken cancellationToken = default);
 }
