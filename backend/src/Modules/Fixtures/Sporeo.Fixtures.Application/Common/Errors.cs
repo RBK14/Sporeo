@@ -121,4 +121,38 @@ public static class Errors
             "ExternalFixtures.MissingSeasonId",
             "Long term sync requires ExternalSeasonId.");
     }
+
+    /// <summary>
+    /// Errors related to venue geocoding provider calls.
+    /// </summary>
+    public static class Geocoding
+    {
+        /// <summary>
+        /// Returned when the geocoding API cannot be contacted or responds with an unexpected status.
+        /// </summary>
+        public static readonly Error HttpError = new(
+            "Geocoding.HttpError",
+            "Failed to contact the geocoding API.");
+
+        /// <summary>
+        /// Returned when the geocoding API finds no location for the venue.
+        /// </summary>
+        public static readonly Error NotFound = new(
+            "Geocoding.NotFound",
+            "Location not found.");
+
+        /// <summary>
+        /// Returned when the geocoding API rate limit is exceeded.
+        /// </summary>
+        public static readonly Error RateLimited = new(
+            "Geocoding.RateLimited",
+            "Geocoding rate limit was exceeded.");
+
+        /// <summary>
+        /// Returned when the geocoding API payload cannot be parsed.
+        /// </summary>
+        public static readonly Error ParseError = new(
+            "Geocoding.ParseError",
+            "Failed to parse geocoding API data.");
+    }
 }
