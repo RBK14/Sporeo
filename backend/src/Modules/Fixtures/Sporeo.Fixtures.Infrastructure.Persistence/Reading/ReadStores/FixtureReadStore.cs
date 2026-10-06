@@ -11,7 +11,6 @@ using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
-using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 namespace Sporeo.Fixtures.Infrastructure.Persistence.Reading.ReadStores;
 
@@ -140,11 +139,13 @@ internal sealed class FixtureReadStore(ISqlConnectionFactory sqlConnectionFactor
                 f.Name,
                 f.StartDate,
                 f.Status,
-                v.Id AS VenueId,
+                v.Id AS VenueRowId,
                 v.Name AS VenueName,
                 v.Street AS VenueStreet,
                 v.City AS VenueCity,
                 v.Country AS VenueCountry,
+                CAST(v.Latitude AS float) AS VenueLatitude,
+                CAST(v.Longitude AS float) AS VenueLongitude,
                 spo.Id AS SportId,
                 spo.Name AS SportName,
                 l.Id AS LeagueId,
@@ -171,11 +172,13 @@ internal sealed class FixtureReadStore(ISqlConnectionFactory sqlConnectionFactor
         public string Name { get; init; } = null!;
         public DateTimeOffset StartDate { get; init; }
         public FixtureStatus Status { get; init; }
-        public Guid? VenueId { get; init; }
+        public Guid? VenueRowId { get; init; }
         public string? VenueName { get; init; }
         public string? VenueStreet { get; init; }
         public string? VenueCity { get; init; }
         public string? VenueCountry { get; init; }
+        public double? VenueLatitude { get; init; }
+        public double? VenueLongitude { get; init; }
         public Guid SportId { get; init; }
         public string SportName { get; init; } = null!;
         public Guid? LeagueId { get; init; }
@@ -186,14 +189,15 @@ internal sealed class FixtureReadStore(ISqlConnectionFactory sqlConnectionFactor
 
     private static FixtureDetailsReadModel MapFixtureDetails(FixtureDetailsRow row)
     {
-        FixtureVenueReadModel? venue = row.VenueId is null
+        FixtureVenueReadModel? venue = row.VenueRowId is null
             ? null
             : new FixtureVenueReadModel(
-                VenueId.FromValue(row.VenueId.Value),
                 row.VenueName!,
                 row.VenueStreet,
                 row.VenueCity,
-                row.VenueCountry);
+                row.VenueCountry,
+                row.VenueLatitude,
+                row.VenueLongitude);
 
         FixtureLeagueReadModel? league = row.LeagueId is null
             ? null

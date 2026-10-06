@@ -3,7 +3,6 @@ using Sporeo.Fixtures.Domain.Fixtures.ValueObjects;
 using Sporeo.Fixtures.Domain.Leagues.ValueObjects;
 using Sporeo.Fixtures.Domain.Seasons.ValueObjects;
 using Sporeo.Fixtures.Domain.Sports.ValueObjects;
-using Sporeo.Fixtures.Domain.Venues.ValueObjects;
 
 namespace Sporeo.Fixtures.Application.Fixtures.Queries.GetFixtureDetails;
 
@@ -50,11 +49,18 @@ public sealed record FixtureLeagueReadModel(LeagueId Id, string Name);
 public sealed record FixtureSeasonReadModel(SeasonId Id, string Name);
 
 /// <summary>
-/// Venue summary included in fixture details.
+/// Venue summary included in fixture details without exposing the venue domain identity.
 /// </summary>
-/// <param name="Id">The venue identifier.</param>
 /// <param name="Name">The venue display name.</param>
 /// <param name="Street">The street line of the venue address, if specified.</param>
 /// <param name="City">The city of the venue address, if specified.</param>
 /// <param name="Country">The country of the venue address, if specified.</param>
-public sealed record FixtureVenueReadModel(VenueId Id, string Name, string? Street, string? City, string? Country);
+/// <param name="Latitude">The venue latitude in decimal degrees, if specified.</param>
+/// <param name="Longitude">The venue longitude in decimal degrees, if specified.</param>
+public sealed record FixtureVenueReadModel(
+    string Name,
+    string? Street,
+    string? City,
+    string? Country,
+    double? Latitude,
+    double? Longitude);
