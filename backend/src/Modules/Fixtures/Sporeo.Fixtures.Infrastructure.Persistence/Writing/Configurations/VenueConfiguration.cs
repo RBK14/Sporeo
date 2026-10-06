@@ -85,6 +85,16 @@ internal class VenueConfiguration : IEntityTypeConfiguration<Venue>
         builder.Property(x => x.IsManuallyEdited)
             .IsRequired();
 
+        builder.Property(x => x.GeocodingStatus)
+            .HasConversion<string>()
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(x => x.GeocodingErrorCode)
+            .HasMaxLength(100);
+
+        builder.Property(x => x.LastGeocodingAttemptOn);
+
         builder.Property(x => x.CreatedOn).IsRequired();
         builder.Property(x => x.ModifiedOn);
         builder.Property(x => x.IsDeleted).IsRequired();
